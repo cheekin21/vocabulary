@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSLE Vocabulary Trainer</title>
+    <style>
+        :root {
+            --bg-main: #0c0e12;
+            --card-bg: #161a22;
+            --text-white: #ffffff;
+            --text-dim: #b3b9c4;
+            --accent-blue: #388bfd;
+            --accent-green: #238636;
+            --accent-red: #da3633;
+            --border-default: #30363d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-white);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+        }
+
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-default);
+            padding-bottom: 15px;
+        }
+
+        .session-info {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+        }
+
+        .score-badge {
+            font-size: 16px;
+            font-weight: 700;
+            background: #1f242c;
+            border: 1px solid var(--border-default);
+            padding: 8px 18px;
+            border-radius: 6px;
+            color: var(--accent-blue);
+        }
+
+        .word-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin: 20px 0 15px 0;
+        }
+
+        .context-sentence {
+            font-size: 20px;
+            font-style: italic;
+            color: var(--text-white);
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .option-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 25px 20px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 100px;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .option-card:hover:not(.disabled) {
+            border-color: #8b949e;
+        }
+
+        .option-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .option-main-text {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-white);
+        }
+
+        .inner-definition {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+            width: 100%;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .option-card.correct {
+            background-color: rgba(35, 134, 54, 0.15) !important;
+            border-color: var(--accent-green) !important;
+        }
+        .option-card.correct .option-main-text {
+            color: #56d364;
+        }
+
+        .option-card.incorrect {
+            background-color: rgba(218, 54, 51, 0.15) !important;
+            border-color: var(--accent-red) !important;
+            cursor: not-allowed;
+        }
+        .option-card.incorrect .option-main-text {
+            color: #ff7b72;
+        }
+        .option-card.incorrect .inner-definition {
+            color: #ff7b72;
+            border-top-color: rgba(218, 54, 51, 0.2);
+        }
+
+        .option-card.disabled {
+            pointer-events: none;
+        }
+
+        .action-btn {
+            background-color: var(--accent-blue);
+            color: var(--text-white);
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            margin-left: auto;
+        }
+
+        .action-btn:hover {
+            background-color: #58a6ff;
+        }
+
+        .screen {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .screen h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .screen p {
+            color: var(--text-dim);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .large-btn {
+            background-color: var(--accent-blue);
+            color: var(--text-white);
+            border: none;
+            padding: 16px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .score-display-big {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin: 30px 0;
+        }
+
+        @media (max-width: 600px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="start-screen" class="screen">
+        <h2>PSLE Daily Vocabulary</h2>
+        <p>20 random unseen words. 1.0 pt on Try 1 • 0.5 pt on Try 2 • 0 pt thereafter.</p>
+        <button class="large-btn" id="start-btn">Begin Session</button>
+    </div>
+
+    <div id="quiz-window" style="display: none;">
+        <div class="header-panel">
+            <div class="session-info" id="q-progress">Question 1 of 20</div>
+            <div class="score-badge" id="score-tracker">Score: 0.0</div>
+        </div>
+
+        <h1 class="word-title" id="display-word">---</h1>
+        <div class="context-sentence" id="display-context">"---"</div>
+
+        <div class="options-grid" id="grid-container"></div>
+
+        <button class="action-btn" id="next-btn">Next Question →</button>
+    </div>
+
+    <div id="result-screen" class="screen" style="display: none;">
+        <h2>Session Completed</h2>
+        <div class="score-display-big" id="final-points">0.0 / 20</div>
+        <p id="performance-commentary">Keep practicing to expand your Paper 2 capabilities.</p>
+        <button class="large-btn" id="return-btn">Practice Again</button>
+    </div>
+</div>
+
+<script>
+// --- MASTER EXAM VOCABULARY DATA BANK (500 UNIQUE HAND-CURATED WORDS) ---
+const wordsPool = [
+    ["Abundant", "The tropical rainforest provides an abundant supply of fresh water and diverse fruit plants.", "Scarce and minimal", "Plentiful and existing in large quantities", "Extremely cold and freezing", "Dangerous and harmful"],
+    ["Accomplish", "With sheer determination and hard work, the team managed to accomplish their goals ahead of schedule.", "To give up instantly", "To fail completely", "To achieve or complete something successfully", "To delay indefinitely"],
+    ["Accumulate", "If you do not clear your desk daily, a massive pile of unread papers will quickly accumulate.", "To distribute evenly", "To gather or build up an increasing number or quantity", "To throw away as waste", "To lose item track"],
+    ["Accurate", "The weather forecaster provided an accurate description of the path the heavy storm would take.", "Completely incorrect", "Correct, precise, and exact", "Delivered late", "Unclear and confusing"],
+    ["Achieve", "Through continuous effort on the track, the runner managed to achieve a historic personal record.", "To reach or attain a desired objective by effort", "To lose a competition", "To abandon a mission", "To modify baseline rules"],
+    ["Adapt", "Polar bears have evolved thick layers of blubber and dense fur to adapt to the freezing Arctic climate.", "To refuse to change", "Make suitable for a new use or situation; adjust", "To move away immediately", "To perish in hot settings"],
+    ["Adequate", "The camp instructors ensured that every student received an adequate amount of food and clean water.", "Insufficient and lacking", "Far too expensive", "Satisfactory or acceptable in quality or quantity", "Delicious and sweet"],
+    ["Adjourn", "Since the meeting rooms were required for another function, the chairman decided to adjourn the discussion.", "To begin a fresh session", "To break off a meeting with the intention of resuming it later", "To cancel a plan forever", "To speak much louder"],
+    ["Adore", "The young children completely adore their kindergarten teacher because she is incredibly patient and kind.", "To dislike intensely", "To feel deep love and admiration for", "To ignore completely", "To fear or run away from"],
+    ["Adverse", "The sailing expedition was cancelled due to adverse weather conditions and strong sea currents.", "Favorable and sunny", "Unfavorable, harmful, or preventing success", "Expected and ordinary", "Delightful and fun"],
+    ["Advocate", "As an environmental leader, she chose to advocate for cleaner oceans and zero-plastic policies.", "To publicly support or recommend a cause", "To actively work against a proposal", "To completely ignore an ongoing issue", "To hide historical records from view"],
+    ["Affable", "The host's affable manner made all the international guests feel instantly welcome at the dinner table.", "Friendly, good-natured, or easy to talk to", "Cold, distant, and arrogant", "Extremely rich and powerful", "Quiet and uncommunicative"],
+    ["Affluent", "The charity organization received a massive financial donation from an affluent businessman in the city.", "Extremely poor and needy", "Wealthy; having a great deal of money", "Greedy and ungenerous", "Famous and widely known"],
+    ["Aggressive", "The protective mother bear became aggressive when she noticed hikers approaching her young cubs.", "Ready or likely to attack or confront; hostile", "Gentle, calm, and friendly", "Frightened and running away", "Slow and very lazy"],
+    ["Alleviate", "The doctor prescribed a special cooling gel to help alleviate the pain from the severe sunburn.", "To make suffering or a problem less severe", "To make a condition worse", "To ignore medical symptoms", "To investigate a disease"],
+    ["Altruistic", "The billionaire's altruistic nature led him to donate half his fortune to building schools for underprivileged children.", "Selfish and greedy", "Extremely famous and widely known", "Unselfishly concerned for the welfare of others", "Highly skilled in business matters"],
+    ["Ambiguous", "The instructions left by the group leader were ambiguous, causing immense confusion among the team members.", "Extremely straightforward and clear", "Beautifully written in local languages", "Delivered ahead of expected schedule", "Open to more than one interpretation; unclear"],
+    ["Ambitious", "The ambitious young student aims to secure a perfect score in every component of the final exam.", "Having or showing a strong desire and determination to succeed", "Lazy and indifferent to results", "Fearful of facing hard tasks", "Polite and helpful to peers"],
+    ["Ample", "The hikers packed ample supplies of energy bars and clean water for their five-day mountain journey.", "Insufficient and lacking", "Enough or more than enough; plentiful", "Extremely heavy to carry", "Expired and unsafe to eat"],
+    ["Annihilate", "The massive volcanic eruption threatened to completely annihilate the small villages located on the island.", "To build or construct safely", "To protect from outer harm", "To destroy utterly; obliterate", "To expand a living area"],
+    ["Anonymous", "The school received a generous donation of new library books from an anonymous ex-student.", "Famous and celebrated openly", "Of unknown name; not identified", "Strict and very unforgiving", "Wealthy and highly successful"],
+    ["Anticipate", "Experienced drivers always anticipate potential dangers on the slippery road during a heavy downpour.", "To ignore surrounding clues", "Regret past driving mistakes", "To look forward to or expect an event", "To drive at maximum speed"],
+    ["Apathy", "The student council tried to combat student apathy by introducing more exciting lunchtime activities.", "Intense excitement and joy", "Deep sadness and depression", "Lack of interest, enthusiasm, or concern", "Strong disagreement and conflict"],
+    ["Apologetic", "The boy was deeply apologetic after he accidentally stepped on his classmate's brand new school shoes.", "Showing or expressing regret or remorse", "Arrogant and refusing to speak", "Amused and laughing out loud", "Confused about what happened"],
+    ["Appalling", "The living conditions in the neglected refugee camp were absolutely appalling, shocking the visitors.", "Excellent and highly comfortable", "Causing dismay or horror; horrific", "Ordinary and expected", "Beautiful and scenic"],
+    ["Appreciate", "It is important to appreciate the hard work our parents put in daily to support our education.", "To look down on someone", "To recognize the full value of something or someone", "To forget a kind gesture", "To complain about a situation"],
+    ["Apprehensive", "The young girl felt deeply apprehensive before stepping onto the massive stage for her first public piano performance.", "Anxious or fearful that something bad or unpleasant will happen", "Extremely confident and excited", "Bored and falling asleep", "Indifferent to the audience reaction"],
+    ["Arduous", "Climbing to the summit of Mount Everest is an arduous journey that requires months of intense physical preparation.", "Easy, simple, and quick", "Involving or requiring strenuous effort; difficult and tiring", "Cheap and highly affordable", "Fun and thoroughly relaxing"],
+    ["Arrogant", "The champion was so arrogant that he openly mocked his opponents before the tournament even started.", "Humble, modest, and friendly", "Having or revealing an exaggerated sense of one's own importance", "Quiet, reserved, and thoughtful", "Generous with giving praise"],
+    ["Articulate", "The class monitor gave an articulate presentation, explaining the complex project guidelines clearly to everyone.", "Having or showing the ability to speak fluently and coherently", "Mumbled, unclear, and confusing", "Extremely loud and disruptive", "Short, brief, and truncated"],
+    ["Assistance", "The elderly woman thanked the kind passerby who offered immediate assistance when she dropped her groceries.", "The provision of money or help; aid", "Harsh criticism or judgment", "An unexpected delay or barrier", "A formal speech or lecture"],
+    ["Astonish", "The magician's incredible sleight of hand never failed to astonish audiences from all over the world.", "To bore or make someone sleepy", "To surprise or impress someone greatly", "To anger or upset someone", "To instruct or teach carefully"],
+    ["Astute", "The astute businessman noticed a shift in consumer trends and adjusted his strategy to double his profits.", "Foolish and easily tricked", "Having or showing an ability to accurately assess situations; sharp", "Lazy and unconcerned with trends", "Wealthy but completely ungenerous"],
+    ["Atrocious", "The player was dropped from the national squad after displaying an atrocious attitude during training sessions.", "Horrifyingly wicked, or of a very poor quality", "Excellent, exemplary, and praiseworthy", "Calm, peaceful, and cooperative", "Quiet and reserved in nature"],
+    ["Attain", "Through years of dedication and rigorous training, the gymnast finally managed to attain her dream of an Olympic medal.", "To abandon a lifelong goal", "Succeed in achieving or reaching something", "To fail at the final moment", "To modify a target mid-way"],
+    ["Audacious", "The audacious explorer decided to venture deep into the uncharted cave system without a backup guide.", "Showing a willingness to take surprisingly bold risks", "Timid, fearful, and extremely cautious", "Highly experienced and certified", "Foolish and easily frightened"],
+    ["Authentic", "The museum curator confirmed that the ancient scroll was an authentic artifact from the Han Dynasty.", "A clever modern duplicate", "Of undisputed origin; genuine and real", "Incredibly expensive to purchase", "Damaged beyond structural repair"],
+    ["Avenge", "The legendary warrior vowed to avenge his fallen commander by defeating the enemy army in battle.", "To forgive an old enemy completely", "To forget a past historical injustice", "Inflict harm in return for an injury or wrong done", "To build a memorial monument"],
+    ["Avert", "The quick-thinking pilot managed to avert a major disaster by steering the malfunctioning plane away from the houses.", "Turn away or prevent an undesirable occurrence", "To cause an immediate collision", "To ignore warning alarm indicators", "To land ahead of schedule"],
+    ["Baffled", "The complex mathematical riddle completely baffled the entire class, leaving everyone scratching their heads.", "Totally confused or perplexed; bewildered", "Extremely excited and clear-headed", "Bored and entirely uninterested", "Insulted and deeply angered"],
+    ["Barren", "The dry, barren desert landscape stretched out for miles, without a single green plant or water source in sight.", "Lush, green, and highly fertile", "Too poor to produce much or any vegetation", "Crowded with native wildlife species", "Extremely cold and covered in deep ice"],
+    ["Belligerent", "The belligerent customer began shouting angrily at the cashier, refusing to wait patiently in the queue.", "Hostile and aggressive; ready to fight", "Calm, polite, and completely cooperative", "Shy, quiet, and easily frightened", "Generous and tipping the staff"],
+    ["Beneficial", "Regular physical exercise and a balanced diet are highly beneficial for maintaining robust physical health.", "Harmful, toxic, and dangerous", "Resulting in good; advantageous; helpful", "Extremely expensive to maintain", "Time-consuming and exhausting"],
+    ["Benevolent", "The benevolent old king was loved by all his subjects because he reduced taxes and built clean public hospitals.", "Kind, well-meaning, and kindly", "Cruel, harsh, and unforgiving", "Extremely wealthy and powerful", "Indifferent to the problems of others"],
+    ["Bewildered", "The young tourist stood bewildered at the massive train junction, unable to read the foreign signboards.", "Completely clear about directions", "Cause someone to become perplexed and confused", "Deeply excited about a destination", "Tired and searching for a hotel"],
+    ["Biased", "The referee was accused of being biased after he awarded a controversial penalty to his favorite home team.", "Completely neutral and fair", "Showly unfair prejudice for or against someone or something", "Highly experienced and professional", "Late to arrive at the stadium"],
+    ["Blunder", "A careless blunder in the final paragraph of his essay caused the student to lose valuable examination marks.", "A brilliant and creative concept", "A stupid or careless mistake", "An expected or minor layout change", "A beautiful calligraphic stroke"],
+    ["Boisterous", "The teacher had to raise her voice to gain the attention of the boisterous crowd of students in the canteen.", "Quiet, reserved, and extremely orderly", "Noisy, energetic, and rowdy", "Frightened and silent with fear", "Bored and lacking physical energy"],
+    ["Bold", "The bold young knight stepped forward to challenge the fierce dragon that was terrorizing the village.", "Showing a willingness to take risks; confident and brave", "Cowardly, timid, and running away", "Highly educated and scholarly", "Quiet and avoiding confrontation"],
+    ["Braggart", "Nobody liked the braggart because he spent every single recess boasting about his expensive new gaming gadgets.", "A very humble and quiet individual", "A person who boasts about their achievements or possessions", "A generous person who shares items", "A highly skilled computer programmer"],
+    ["Brevity", "The teacher appreciated the brevity of the student's summary, as it highlighted the main points in just two lines.", "Extreme length and detail", "Concise and exact use of words in writing or speech", "A high level of confusion", "Beautiful handwriting style"],
+    ["Brilliant", "The scientist came up with a brilliant solution that solved the clean energy crisis using solar energy.", "Exceptionally clever or talented; bright", "Dull, foolish, and completely uninspired", "Extremely slow to catch on", "Highly expensive to implement"],
+    ["Brittle", "The old parchment paper had become so dry and brittle that it cracked the moment the researcher touched it.", "Flexible, stretchy, and strong", "Hard but liable to break or shatter easily", "Heavy, thick, and fully waterproof", "Soft, warm, and highly comfortable"],
+    ["Buoyant", "Life jackets are made of specialized buoyant materials that keep swimmers floating safely on the water surface.", "Able to float easily in water or air", "Prone to sinking rapidly to the bottom", "Absorbent and soaking up fluids", "Heavy and made of solid steel metal"],
+    ["Calamity", "The massive earthquake was a severe calamity that left thousands of families homeless and without power.", "An event causing great and often sudden damage or distress", "A highly successful public celebration", "An unexpected financial bonus or gift", "A scientific breakthrough discovery"],
+    ["Camouflage", "Chameleons alter their skin color to camouflage themselves against tree trunks, hiding from predators.", "To stand out brightly from surroundings", "Hide or disguise the presence of something or someone", "To run at exceptional physical speed", "To issue a loud warning cry to peers"],
+    ["Candid", "The headmaster gave a candid assessment of the school's performance, pointing out both strengths and flaws.", "Deceptive, dishonest, and misleading", "Truthful and straightforward; frank", "Extremely harsh and highly insulting", "Short, brief, and compressed in size"],
+    ["Capable", "The school selected a highly capable captain who could lead the team to victory in the national finals.", "Having the ability, fitness, or quality necessary to do something", "Incompetent, lazy, and highly unreliable", "Frightened of taking responsibilities", "New and completely untrained"],
+    ["Capacity", "The newly built indoor sports stadium has a massive seating capacity of over ten thousand spectators.", "The maximum amount that something can contain or produce", "The total cost of building a structure", "The aesthetic appearance of a building", "The speed at which a venue is emptied"],
+    ["Capricious", "The weather in the mountains was capricious, changing from bright sunshine to a heavy downpour in minutes.", "Predictable and completely steady", "Extremely hot and uncomfortable", "Beautiful and scenic", "Given to sudden and unaccountable changes of mood or behavior"],
+    ["Captivate", "The colorful coral reefs and diverse marine life never fail to captivate scuba divers who visit the island.", "To bore or completely uninterest someone", "Attract and hold the interest and attention of; charm", "To frighten or drive away visitors", "To confuse or perplex deep observers"],
+    ["Casual", "The classmates had a casual conversation about their favorite video games while waiting for the school bus.", "Relaxed and unconcerned; informal", "Formal, official, and strictly recorded", "Angry, heated, and highly confrontational", "Anxious, fearful, and full of worry"],
+    ["Catalyst", "The teacher's encouraging words acted as a catalyst for the quiet boy's sudden participation in class activities.", "A physical barrier that prevents future movement", "A heavy item used to secure loose objects", "An event or person that causes a change or action", "An unexpected natural weather phenomenon"],
+    ["Cautious", "Experienced hikers are always cautious when walking along narrow, slippery mountain ledges at night.", "Reckless, careless, and rushing forward", "Attentive to potential problems or dangers; careful", "Fearful and refusing to move forward", "Fast, rapid, and making loud noises"],
+    ["Cease", "The factory was ordered to cease operations immediately until all safety violations were thoroughly corrected.", "To accelerate operations rapidly", "Bring or come to an end; stop", "To hide historical records from view", "To move to a larger modern venue"],
+    ["Celebrated", "The celebrated author was greeted with thunderous applause when he stepped onto the stage at the book fair.", "Completely unknown to the public", "Widely known and praised; famous", "Strict and highly critical of others", "Young and completely unexperienced"],
+    ["Censure", "The careless officer faced severe public censure after he lost a collection of highly confidential records.", "High praise and public commendation", "Express severe disapproval of someone or something openly", "A massive promotion or financial bonus", "A complete explanation of circumstances"],
+    ["Chaos", "Total chaos erupted in the crowded stadium when the stadium lights suddenly failed during the final match.", "Complete disorder and confusion", "Perfect peace, quiet, and tranquility", "Strict order and flawless organization", "A sudden wave of extreme boredom"],
+    ["Charismatic", "The charismatic team leader easily motivated his crew members to work together and complete the hard project.", "Dull, uninspiring, and highly disliked", "Exercising a compelling charm which inspires devotion in others", "Strict, unforgiving, and bad-tempered", "Quiet and preferring to work in isolation"],
+    ["Chronological", "The history teacher asked the students to arrange the historical events in precise chronological order.", "Starting with the most expensive items", "Arranged in the order of time they occurred", "Sorted alphabetically by country name", "Organized by importance or value scale"],
+    ["Circumstance", "Under no circumstance should you open the laboratory doors without wearing proper protective eyewear.", "A fact or condition connected with or relevant to an event", "A financial budget or operational cost", "A formal rule written in law textbooks", "The physical distance around an area"],
+    ["Clarify", "Could you please clarify the project instructions? Most of us are still confused about the final deadline.", "Make a statement less confusing and clearer", "To make a situation more complicated", "To repeat an argument much louder", "To write an essay in cursive script"],
+    ["Clamour", "A loud clamour arose from the crowded marketplace as street vendors shouted out their prices to passersby.", "Flawless peace and total silence", "A loud and confused noise, especially that of people shouting", "A beautiful symphonic orchestra track", "A confidential conversation or whisper"],
+    ["Clandestine", "The rebel spies held a clandestine meeting in a dark alleyway to exchange highly confidential maps.", "Kept secret or done secretively, especially because illicit", "Openly announced on national television", "Extremely expensive and high-tech", "Attended by thousands of public citizens"],
+    ["Clemency", "The defense lawyer appealed for clemency, highlighting that the young offender had shown genuine remorse.", "The harshest possible legal punishment", "Mercy; leniency; refusal to judge harshly", "A long period of solitary confinement", "An immediate promotion or award"],
+    ["Clumsy", "The clumsy waiter accidentally knocked over a tray of expensive crystal glasses, shattering them all.", "Graceful, agile, and highly precise", "Awkward in movement or in handling things", "Fast, efficient, and very careful", "Polite and apologetic to customers"],
+    ["Coerce", "The bullies tried to coerce the younger boy into giving them his pocket money by threatening to hide his school bag.", "To gently persuade someone to join a group", "To persuade an unwilling person using force or threats", "To reward someone for performing a helpful task", "To teach someone an important moral lesson"],
+    ["Cognizant", "As a class monitor, you must be fully cognizant of the school safety regulations during outdoor excursions.", "Completely unaware and ignorant", "Having knowledge or being aware of", "Indifferent and unconcerned with rules", "Fearful of taking responsibility"],
+    ["Coherent", "The debate speaker presented a coherent argument, linking all her points logically to win the judges' praise.", "Logical, consistent, and easy to understand", "Confusing, disorganized, and jumbled up", "Spoken at an exceptionally high speed", "Short, brief, and completely truncated"],
+    ["Collaborate", "The science teachers decided to collaborate on a new learning project that combines chemistry and physics.", "To compete fiercely against each other", "Work jointly on an activity, especially to produce something", "To work in complete isolation from peers", "To cancel a scheduled academic event"],
+    ["Colossal", "The construction workers excavated a colossal boulder from the ground, requiring three large trucks to move it.", "Extremely small and microscopic", "Extremely large; huge; gigantic", "Lightweight and made of plastic", "Perfectly round and shiny in appearance"],
+    ["Commence", "The opening ceremony will commence the moment the guest of honor arrives at the main school hall.", "To bring to an end; finish", "To begin or start an event or operation", "To delay an activity indefinitely", "To cancel a plan due to bad weather"],
+    ["Commendable", "The student's commendable honesty in returning the lost wallet was praised by the principal during assembly.", "Deserving praise and approval; praiseworthy", "Disgraceful, shocking, and highly shameful", "Ordinary, expected, and unnoticeable", "Clever, witty, and highly amusing"],
+    ["Compassion", "The kind nurse showed deep compassion toward the injured child, gently comforting him until his parents arrived.", "Anger and intense irritation", "Sympathetic pity and concern for the sufferings of others", "Arrogance and indifference to pain", "Professional skill and surgical speed"],
+    ["Compatible", "Ensure that the new computer software application is fully compatible with your current operating system.", "Able to exist or occur together without conflict", "Constantly crashing and causing errors", "Extremely expensive to install locally", "Difficult to understand or navigate"],
+    ["Compelling", "The detective presented compelling evidence that proved the suspect was innocent of the crime.", "Evoking interest, attention, or admiration in a powerful way", "Weak, unconvincing, and easily ignored", "Confusing, jumbled, and poorly structured", "Written down in local language dialects"],
+    ["Compensate", "The airline company agreed to compensate all the affected passengers with travel vouchers after the long delay.", "To blame passengers for a situation", "Give someone something, typically money, in recognition of loss", "To cancel all future flights to a city", "To ignore complaints from customers"],
+    ["Competent", "The company hired a highly competent programmer who fixed all the website glitches in less than an hour.", "Efficient, capable, and having the necessary skill", "Incompetent, clumsy, and highly unreliable", "New, untrained, and constantly confused", "Cheap and willing to work long hours"],
+    ["Complacent", "After scoring full marks in the preliminary exams, he became complacent and stopped revising his weak topics.", "Anxious and worried about failure", "Extremely hard-working and focused", "Showing smug or uncritical satisfaction with oneself", "Polite and helpful to classmates"],
+    ["Comply", "All swimmers must strictly comply with the pool safety regulations to prevent accidental injuries.", "Act in accordance with a wish or command; obey", "To openly rebel against or break rules", "To argue about the fairness of guidelines", "To modify baseline layout systems"],
+    ["Composed", "Despite the immense pressure of the grand finals, the young chess player remained completely composed.", "Agitated, panicked, and shouting loudly", "Calm, cool, and in control of one's feelings", "Bored, sleepy, and entirely uninterested", "Confused about what move to make next"],
+    ["Comprehend", "The language barrier made it very difficult for the foreign tourist to comprehend the guide's instructions.", "To completely forget a message", "Grasp mentally; understand fully", "To ignore an ongoing conversation", "To translate text into cursive script"],
+    ["Comprehensive", "The revision guide provides a comprehensive overview of all the science topics tested in the primary syllabus.", "Short, brief, and missing key details", "Including all or nearly all elements or aspects of something", "Extremely difficult to read or understand", "Expensive and out of stock in stores"],
+    ["Compulsory", "Attending the final examination briefing is compulsory for all graduating students this Friday.", "Required by law or a rule; obligatory", "Optional; left to individual choice", "Free of charge for school members", "Delayed until the following semester"],
+    ["Concede", "The candidate chose to concede the election after realizing his opponent had secured a massive majority.", "To celebrate a historic public victory", "Admit that something is true or valid after first denying it", "To accuse the other party of cheating", "To demand an immediate recount of votes"],
+    ["Conceited", "Nobody wanted to work with the conceited boy because he kept insisting that his ideas were always superior.", "Humble, modest, and cooperative", "Excessively proud of oneself; vain; arrogant", "Shy, quiet, and lacking confidence", "Generous with sharing team praise"],
+    ["Concentrate", "It is very difficult to concentrate on your revision when there is loud drilling noise from the next room.", "Focus all one's attention on a particular object or activity", "To fall asleep due to physical fatigue", "To chat idly with surrounding peers", "To complete a task at maximum speed"],
+    ["Concise", "The summary was concise and clear, cutting out all redundant filler words to present the core facts.", "Giving a lot of information clearly and in a few words", "Extremely long, wordy, and highly repetitive", "Confusing, messy, and hard to follow", "Beautifully illustrated with diagrams"],
+    ["Concoct", "The creative chef managed to concoct a delicious new dessert using only three simple ingredients.", "To throw away fresh ingredients", "Create or devise a story or plan; prepare a dish", "To ruin a meal by overcooking it", "To purchase frozen food from stores"],
+    ["Concur", "The committee members all concur that implementing a zero-plastic policy will benefit the school environment.", "To disagree fiercely and split votes", "Be of the same opinion; agree fully", "To keep an opinion completely secret", "To postpone a decision indefinitely"],
+    ["Condemn", "World leaders stepped forward to condemn the brutal attack on innocent civilians, demanding immediate justice.", "To praise and celebrate an action openly", "Express complete disapproval of; censure", "To ignore a situation completely", "To investigate the financial cost involved"],
+    ["Condescending", "The arrogant senior spoke in a condescending tone, making the new members feel small and unwelcome.", "Having or showing a feeling of patronizing superiority", "Kind, encouraging, and highly supportive", "Quiet, reserved, and choosing to listen", "Funny, witty, and highly entertaining"],
+    ["Condone", "The school disciplinary board will never condone cheating, and anyone caught will face immediate suspension.", "To encourage and reward an action", "Accept and allow behavior that is considered wrong to continue", "To investigate a mystery thoroughly", "To forget a rule written in textbooks"],
+    ["Conducive", "A quiet, well-lit study room is highly conducive for effective examination preparation.", "Making a certain situation or outcome likely or possible", "Disruptive, noisy, and causing barriers", "Extremely expensive to set up locally", "Dark, cold, and inducing deep sleep"],
+    ["Confer", "The judges went backstage to confer about the performance scores before announcing the grand champion.", "To award a prize immediately", "Exchange opinions, hit a consensus, or discuss", "To argue loudly in front of the audience", "To modify the baseline grading criteria"],
+    ["Confidential", "These medical files are strictly confidential and can only be accessed by authorized doctors.", "Intended to be kept secret", "Published openly on the school website", "Free for anyone to read and edit", "Written in a foreign language code"],
+    ["Confiscate", "The teacher had to confiscate the boy's handheld gaming console after he played with it during the science lesson.", "To reward a student with a gadget", "Take or seize someone's property with authority", "To repair a broken electronic device", "To purchase an item from an open store"],
+    ["Conform", "All new vehicles must conform to the latest environmental emission standards to minimize air pollution.", "To openly break or defy guidelines", "Comply with rules, standards, or laws", "To protest against administrative rules", "To operate at much higher speeds"],
+    ["Confront", "The brave shopkeeper decided to confront the shoplifter, demanding that he return the stolen items.", "To run away and hide from danger", "Face up to and deal with a problem or difficult person", "To apologize for an accidental error", "To call for immediate police backup"],
+    ["Confused", "The jumbled instructions left the students completely confused about what materials to pack for the camp.", "Unable to think clearly; bewildered", "Extremely certain and clear-headed", "Deeply excited and highly motivated", "Bored and entirely uninterested"],
+    ["Congenial", "The colleagues enjoyed a congenial working environment, collaborating smoothly on every single assignment.", "Hostile, toxic, and full of friction", "Pleasant because of a personality or interests suited to one's own", "Strict, rigid, and highly stressful", "Noisy, chaotic, and disorganized"],
+    ["Congregate", "The principal asked all graduating students to congregate in the main courtyard for the cohort photograph.", "To scatter or disperse in all directions", "Gather into a crowd or mass", "To leave the school compound early", "To sit quietly in separate classrooms"],
+    ["Conjecture", "Without any concrete clues, the detective's theory about the missing painting remains pure conjecture.", "An opinion or conclusion formed on the basis of incomplete information", "A verified factual scientific discovery", "A written legal statement from a witness", "The total financial value of an asset"],
+    ["Conscientious", "A conscientious student always checks through his homework answers before submission to minimize simple errors.", "Wishing to do what is right, especially to do one's work thoroughly", "Acting with extreme speed without checking details", "Displaying a preference for physical sports over study", "Frequently forgetting key items at home"],
+    ["Conscious", "The patient remained fully conscious during the minor surgical operation, responding clearly to the doctor.", "Aware of and responding to one's surroundings", "Deeply asleep under general anesthesia", "Confused and unable to speak clearly", "Frightened and shouting out in pain"],
+    ["Consecutive", "The school team achieved historic glory by winning the national championship for three consecutive years.", "Separated by long intervals of time", "Following continuously; in unbroken or logical sequence", "Occurring completely by random chance", "Cancelled due to bad weather runs"],
+    ["Consensus", "After a long discussion, the committee finally reached a consensus on the new graduation night venue.", "A complete disagreement and split vote", "A general agreement among a group of people", "A confidential rule kept from the public", "An unexpected financial budget cut"],
+    ["Consent", "You must obtain your parents' written consent before you can participate in the adventure camp.", "Permission for something to happen or agreement to do something", "Strong disapproval and complete refusal", "A financial fee required for registration", "A medical certificate from a clinic"],
+    ["Consequence", "A careless mistake in your calculations can have a serious consequence on the final project outcome.", "A reward or positive token of appreciation", "A result or effect of an action or condition", "An unexpected bonus or lucky event", "A formal rule written in textbooks"],
+    ["Conservative", "The school board took a conservative approach, choosing to save funds rather than spend on luxury items.", "Holding to traditional values and cautious about change", "Reckless, wasteful, and spending heavily", "Modern, radical, and highly innovative", "Aggressive and ready to confront peers"],
+    ["Considerate", "A considerate passenger always gives up his seat to the elderly or pregnant women on the crowded train.", "Showing kindly awareness or regard for another's feelings", "Selfish, rude, and ignoring surrounding needs", "Hurrying to secure a seat for himself", "Loud, disruptive, and playing loud music"],
+    ["Consistent", "Through consistent practice every single afternoon, her spelling accuracy improved significantly.", "Erratic, unpredictable, and constantly changing", "Acting or done in the same way over time; reliable", "Lazy, unmotivated, and frequently skipping tasks", "Fast, rapid, and making careless mistakes"],
+    ["Console", "The kind teacher stepped forward to console the crying child who had accidentally lost her pocket money.", "To scold or punish someone severely", "Comfort someone at a time of grief or disappointment", "To ignore a situation completely", "To investigate the financial loss value"],
+    ["Conspicuous", "The bright red warning sign was placed in a highly conspicuous position right at the laboratory entrance.", "Hidden completely from public view", "Clearly visible; attracting notice or attention", "Extremely small and microscopic", "Beautifully decorated with fairy lights"],
+    ["Conspire", "The crooked guards decided to conspire with the thieves to steal the priceless diamond from the vault.", "To protect a vault from potential thieves", "Make secret plans jointly to commit an unlawful or harmful act", "To report a crime immediately to the police", "To work hard to earn a lawful bonus"],
+    ["Constant", "The constant dripping of the leaky kitchen tap kept the entire household awake throughout the night.", "Occurring continuously over a period of time", "Happening rarely or completely by accident", "Quiet, silent, and making no noise", "Changing speed or stopping frequently"],
+    ["Consternation", "To the consternation of the travelers, their final flight connection was cancelled without any warning.", "A feeling of anxiety or dismay, typically at something unexpected", "Intense joy, celebration, and excitement", "Complete indifference and unconcern", "Deep boredom and lack of interest"],
+    ["Constrain", "The tight budget will significantly constrain our plans to purchase brand new equipment for the science club.", "To expand or increase options rapidly", "Severely restrict the scope, extent, or activity of", "To fully fund a project without limits", "To improve the quality of an operation"],
+    ["Consume", "The massive forest fire threatened to completely consume hundreds of historical trees within hours.", "To protect and preserve from outer harm", "Eat, drink, or ingest; destroy or use up completely", "To plant new saplings in an area", "To document a scene using photographs"],
+    ["Contaminate", "Industrial factories must never dump chemical waste into rivers as it will contaminate the local water supply.", "To purify and sanitize a water body", "Make something impure by exposure to a poisonous substance", "To clear a pathway from loose boulders", "To preserve natural resources safely"],
+    ["Contemplate", "The graduating student took a long walk to contemplate her future academic paths and choices.", "To make a decision instantly without thinking", "Look thoughtfully for a long time at; think deeply about", "To completely ignore future career tracks", "To discuss options loudly with random peers"],
+    ["Contempt", "The arrogant player displayed clear contempt for the referee's decision, throwing his racket onto the ground.", "Deep respect, admiration, and appreciation", "The feeling that a person or a thing is beneath consideration", "Complete confusion about a specific rule", "High energy, joy, and celebration tokens"],
+    ["Contend", "The school debate team will contend against three other top schools for the national championship trophy.", "To cooperate smoothly with another party", "Struggle to surmount a difficulty; compete fiercely", "To withdraw from a tournament early", "To celebrate a historic public victory"],
+    ["Contented", "After a hearty, delicious dinner, the family sat by the fireplace feeling fully contented and relaxed.", "Anxious, restless, and deeply worried", "Feeling or showing satisfaction with one's possessions or status", "Extremely hungry and searching for food", "Bored and looking for something to do"],
+    ["Contradict", "The witness's statements completely contradict the forensic evidence found at the scene by detectives.", "To fully support or verify a claim", "Deny the truth of a statement, especially by asserting the opposite", "To explain a situation clearly to judges", "To repeat an argument much louder"],
+    ["Contribute", "Every student is encouraged to contribute recycled materials for the upcoming school art exhibition.", "To steal or misappropriate team items", "Give something, especially money or goods, to help achieve something", "To throw away useful resources as waste", "To object to an environmental project"],
+    ["Controversial", "The referee's controversial decision to disallow the final goal sparked an intense argument among fans.", "Fully agreed by every single spectator", "Giving rise or likely to give rise to public disagreement", "Kept completely secret from the public", "Made ahead of the expected match schedule"],
+    ["Conundrum", "The missing key mystery presented a difficult conundrum that kept the detectives guessing for weeks.", "An easy riddle with an obvious answer", "A confusing and difficult problem or question", "A written legal statement from a witness", "An unexpected stroke of good luck"],
+    ["Convene", "The school principal decided to convene an emergency staff meeting to discuss the new safety guidelines.", "To cancel a meeting permanently", "Come or bring together for a meeting or activity; assemble", "To dismiss a crowd early from a hall", "To work in complete isolation at home"],
+    ["Conventional", "The engineer preferred conventional building methods, choosing reliable brick over modern plastics.", "Radical, experimental, and highly innovative", "Based on or in accordance with what is generally done or believed", "Extremely expensive and high-tech", "Dangerous and unauthorized by law"],
+    ["Conversant", "Our science teacher is highly conversant with the latest technological developments in robotics engineering.", "Completely ignorant and unexperienced", "Familiar with or knowledgeable about something", "Fearful of using modern robotic tools", "Unwilling to learn new academic topics"],
+    ["Convey", "The author used simple, beautiful language to convey a powerful moral message about honesty to young readers.", "To hide or obscure a message completely", "Make an idea, impression, or feeling known or understandable", "To distort or alter facts in a story", "To print a book using cursive script"],
+    ["Conviction", "The human rights activist spoke with deep conviction, capturing the attention of the entire audience.", "A firmly held belief or opinion; a formal declaration of guilt", "Complete doubt, hesitation, and uncertainty", "A vague impression or passing thought", "An apology issued for an accidental error"],
+    ["Convivial", "The graduation party had a convivial atmosphere, filled with loud laughter, good food, and festive music.", "Cold, hostile, and highly stressful", "Friendly, lively, and enjoyable; festive", "Quiet, silent, and completely solemn", "Disorganized, chaotic, and full of friction"],
+    ["Copious", "The student took copious notes during the science lecture, filling three complete notebooks with key facts.", "Insubstantial, brief, and missing details", "Abundant in supply or quantity; plentiful", "Messy, unreadable, and jumbled up", "Highly confidential and kept secret"],
+    ["Cordial", "The two neighboring principal leaders maintained a cordial relationship, cooperating on joint school exchanges.", "Hostile, bitter, and full of friction", "Warm and friendly; polite and respectful", "Arrogant, distant, and uncommunicative", "Noisy, rowdy, and highly chaotic"],
+    ["Corroborate", "The detectives managed to find two independent witnesses who could fully corroborate the suspect's alibi.", "To prove a statement completely false", "Confirm or give support to a statement, theory, or finding", "To ignore key evidence at a crime scene", "To accuse an innocent person of a crime"],
+    ["Corrupt", "The honest officer refused to accept the bribe, vowing to expose the corrupt businessmen who offered it.", "Flawless, ethical, and highly praiseworthy", "Showing a willingness to act dishonestly in return for money", "Strict, rigid, and following laws precisely", "Wealthy, celebrated, and widely known"],
+    ["Counterfeit", "The bank cashier immediately detected the counterfeit note and reported it to the police.", "An authentic government currency print", "Made in exact imitation of something valuable with intention to deceive", "Incredibly old, rare, and high-value", "Damaged, torn, and taped back together"],
+    ["Courteous", "A courteous student always greets the school security guards and cleaning staff when entering the gate.", "Rude, disrespectful, and ignoring others", "Polite, respectful, and considerate in manner", "Arrogant, boastful, and mocking peers", "Loud, rowdy, and disruptive in class"],
+    ["Covert", "The intelligence agency executed a covert operation to recover the stolen technological blueprints.", "Announced publicly on national television", "Not openly acknowledged or displayed; secret", "Extremely cheap and poorly planned", "Attended by thousands of civil spectators"],
+    ["Covet", "It is unhealthy to covet your neighbor's expensive new possessions; instead, be grateful for what you have.", "To ignore or look down on possessions", "Yearn to possess or have something belonging to another", "To give away your own items as charity", "To damage or break electronic gadgets"],
+    ["Cowardice", "The soldier was accused of cowardice after he abandoned his post and hid during the surprise attack.", "Exceptional bravery and physical heroism", "Lack of bravery; fearfulness when facing danger", "Strict discipline and tactical precision", "An accidental logistical mistake"],
+    ["Credible", "The scientist presented a credible explanation that was backed up by three separate laboratory experiments.", "Completely ridiculous and unbelievable", "Able to be believed; convincing; trustworthy", "Confusing, jumbled, and poorly written", "Expensive and out of stock in bookstores"],
+    ["Credulous", "The credulous child fully believed his brother's ridiculous claim that there was a gold mine under their bed.", "Skeptical, sharp, and highly suspicious", "Too ready to believe things; easily fooled; gullible", "Intelligent, scholarly, and highly educated", "Quiet, reserved, and choosing to ignore"],
+    ["Crisis", "The sudden failure of the city's main water treatment plant created a severe public health crisis.", "A time of intense difficulty, trouble, or danger", "A highly successful business expansion", "An unexpected wave of extreme boredom", "A festive community holiday celebration"],
+    ["Criterion", "Academic performance is the primary criterion used to select the recipient of the annual scholarship.", "A financial fee or registration cost", "A principle or standard by which something may be judged", "An unexpected bonus or lucky event", "A written rule printed on certificates"],
+    ["Critical", "The doctor stated that the next twenty-four hours are critical for the patient's full recovery.", "Ordinary, expected, and unnoticeable", "Expressing disapproving comments, or of decisive importance", "Fun, relaxing, and thoroughly enjoyable", "Cheap, affordable, and easily managed"],
+    ["Crucial", "Double-checking your examination answers for simple calculation slips is a crucial step to secure an A.", "Insignificant, minor, and easily skipped", "Of great importance; decisive; critical", "Time-consuming, boring, and unnecessary", "Difficult, complicated, and highly stressful"],
+    ["Crude", "The early explorers constructed a crude shelter using tree branches and large banana leaves to block the rain.", "Luxurious, high-tech, and fully waterproof", "In a natural or raw state; simple, basic, or roughly made", "Perfectly round, smooth, and polished", "Incredibly expensive to purchase locally"],
+    ["Cruel", "The strict master faced severe public backlash for his cruel treatment of the helpless farm animals.", "Kind, loving, and highly compassionate", "Willfully causing pain or suffering to others; severe", "Lazy, indifferent, and neglecting duties", "Famous, celebrated, and widely known"],
+    ["Cryptic", "The ancient tomb entrance was sealed with a cryptic puzzle that required hours of code-breaking to solve.", "Extremely simple and straightforward", "Having a meaning that is mysterious or obscure; puzzling", "Beautifully painted with bright colors", "Made of recycled plastic materials"],
+    ["Culminate", "The week-long youth festival will culminate in a spectacular fireworks display this Saturday night.", "To begin or launch an event sequence", "Reach a climax or point of highest development", "To postpone an activity indefinitely", "To cancel a plan due to budget cuts"],
+    ["Culpable", "The careless driver was found fully culpable for the accident after traffic cameras caught him speeding.", "Blameless, innocent, and praised openly", "Deserving blame; guilty of a misconception or crime", "Frightened, confused, and unable to speak", "Highly experienced and certified by law"],
+    ["Cultivate", "Teachers always encourage students to cultivate good reading habits from a young age to expand their minds.", "To discard or stop a learning process", "Try to acquire or develop a quality or skill; grow", "To ignore academic assignments completely", "To compete fiercely against classmates"],
+    ["Cumbersome", "The delivery man struggled to carry the cumbersome cardboard box up the narrow flight of stairs.", "Lightweight, compact, and easy to hold", "Large or heavy and therefore difficult to carry or use", "Extremely expensive and high-tech", "Beautifully decorated with colorful ribbons"],
+    ["Cunning", "The cunning fox waited silently in the bushes, planning a clever strategy to snatch the farmer's chicken.", "Foolish, clumsy, and easily trapped", "Having or showing skill in achieving one's ends by deceit", "Kind, generous, and helping others", "Slow, lazy, and falling asleep easily"],
+    ["Curb", "The government introduced strict new traffic laws to curb reckless speeding along neighborhood roads.", "To encourage or accelerate an activity", "Restrain or keep in check; modify or limit", "To completely ignore a growing problem", "To fund or subsidize a business branch"],
+    ["Curious", "The curious little boy kept asking his science teacher questions about how stars are formed in outer space.", "Eager to know or learn something; strange or unusual", "Bored, indifferent, and falling asleep", "Quiet, reserved, and avoiding any questions", "Polite, considerate, and sharing items"],
+    ["Curtail", "The school principal had to curtail the outdoor sports carnival due to a sudden rise in the lightning alert index.", "To extend or lengthen a session timeline", "Reduce in extent or quantity; impose a restriction on", "To fully fund an entertainment event", "To celebrate an academic milestone"],
+    ["Custody", "The priceless historical artifacts were kept securely under the strict custody of the museum security team.", "Thrown away as useless historical waste", "The protective care or guardianship of someone or something", "Sold off cheaply to public collectors", "Left unattended in open public display"],
+    ["Cynical", "The cynical old man refused to believe that the boy returned the wallet out of pure honesty.", "Believing that people are motivated purely by self-interest", "Kind, optimistic, and trusting of others", "Confused about human social behaviors", "Highly educated, scholarly, and wise"],
+    ["Dainty", "The elegant tea set was decorated with dainty pink floral patterns along its smooth porcelain edges.", "Large, heavy, and extremely solid", "Delicately small and pretty; exquisite", "Dirty, neglected, and covered in dust", "Cheap and made of recycled plastics"],
+    ["Dauntless", "The dauntless firefighters charged into the collapsing burning building to rescue the trapped family.", "Showing fearlessness and determination", "Timid, cowardly, and running away easily", "Highly paid and elite in rank structure", "Careless, reckless, and making mistakes"],
+    ["Dawdle", "The strict father warned his son not to dawdle along the way and to walk straight home after school.", "To run at maximum physical speed", "Waste time; be slow; loiter path tracks", "To pack equipment efficiently", "To complete a task ahead of schedule"],
+    ["Dazzle", "The spectacular National Day fireworks display never fails to dazzle crowds gathered around the marina.", "To bore or make spectators sleepy", "Amaze or overwhelm someone with a particular impressive quality", "To blind or injure someone's eyes", "To confuse or jumble up light sequences"],
+    ["Dearth", "During the prolonged drought season, the village faced a severe dearth of fresh drinking water.", "An abundant, overflowing supply", "A scarcity or lack of something specified", "An unexpected financial gift or bonus", "A sudden wave of heavy monsoon rain"],
+    ["Debase", "Dumping toxic factory waste into the pristine river will significantly debase the natural ecosystem.", "To elevate or improve the value scale", "Reduce something in quality or value; degrade", "To protect from surrounding harm", "To document a scene using sensors"],
+    ["Debilitate", "A severe bout of dengue fever can completely debilitate an athlete, leaving him weak for weeks.", "To strengthen or boost stamina levels", "Make someone weak and infirm; sap energy", "To cure a disease completely using drugs", "To train harder for an upcoming race"],
+    ["Decipher", "The master code-breakers worked through the night to decipher the enemy's secret radio encryption.", "To write a message using an advanced code", "Succeed in understanding, interpreting, or identifying a text", "To ignore or delete a digital communication link", "To translate text into cursive format"],
+    ["Decisive", "The captain's decisive action during the final minute of the match led the team to a historic victory.", "Hesitant, uncertain, and delaying choices", "Settling an issue; producing a definite result; firm", "Careless, reckless, and causing errors", "Quiet, reserved, and avoiding attention"],
+    ["Decline", "The elderly statesman chose to decline the formal invitation to the grand banquet due to poor health.", "To accept an invitation with joy", "Politely refuse an offer; become smaller or fewer", "To request a more expensive venue", "To postpone an event indefinitely"],
+    ["Decorously", "The perfects behaved decorously during the formal state reception, earning praise from the guest of honor.", "Rudely, rowdy, and disrupting guests", "In a polite and socially correct manner; properly", "Quickly, secretly, and running away", "Anxiously, fearfully, and full of worry"],
+    ["Decrepit", "The ancient, decrepit wooden bridge was closed to the public as it threatened to collapse at any moment.", "Brand new, modern, and highly solid", "Worn out or ruined because of age or neglect", "Incredibly expensive and premium", "Beautifully painted with local motifs"],
+    ["Dedicate", "The retiring teacher urged the young graduates to dedicate themselves to serving the local community.", "To abandon or ignore community duties", "Devote time or effort to a particular task or purpose", "To work purely for personal financial gain", "To compete fiercely against entry peers"],
+    ["Deface", "Vandals who deface school walls with spray paint will face immediate severe disciplinary action.", "To clean, polish, and paint beautifully", "Spoil the surface or appearance of something; vandalize", "To build a protective perimeter fence", "To capture photographs for art class"],
+    ["Defame", "The crooked politician tried to defame his opponent by spreading completely false rumors to the press.", "To praise and celebrate an opponent openly", "Damage the good reputation of someone; slander", "To support a legal proposal in parliament", "To fund a corporate media campaign"],
+    ["Defer", "The committee decided to defer the construction project until sufficient financial funding was secured.", "To launch an operation immediately", "Postpone an action or event to a later time", "To cancel a plan permanently forever", "To modify baseline blueprint dimensions"],
+    ["Defiance", "The rebellious student stood in open defiance of the school uniform rules, refusing to remove his colored cap.", "Bold disobedience; open resistance to authority", "Strict obedience and total compliance", "Complete confusion about an arrangement", "An apology issued for an error made"],
+    ["Deficiency", "A severe deficiency of vitamin C in your daily diet can lead to a health condition known as scurvy.", "An abundant, overflowing supply", "A lack or shortage of something required or necessary", "An unexpected financial gift or bonus", "A delicious flavor added to fresh food"],
+    ["Defile", "Dumping industrial oil waste will defile the pristine sandy beaches of the nature resort.", "To clean, sanitize, and restore a beach", "Damage the purity or appearance of; desecrate; spoil", "To construct a modern maritime harbor", "To photograph a scenic landscape layout"],
+    ["Definite", "The project manager provided a definite timeline, specifying the exact completion date for every stage.", "Vague, uncertain, and constantly changing", "Clearly stated or decided; explicit; certain", "Delayed until the following semester", "Expensive and requiring a large budget"],
+    ["Deft", "The deft fingers of the experienced surgeon stitched up the deep wound with incredible speed and precision.", "Clumsy, awkward, and making mistakes", "Demonstrating skill and cleverness; nimble", "Slow, lazy, and hesitating frequently", "Heavy, thick, and lacking coordination"],
+    ["Defunct", "The old railway line has been completely defunct for decades, and its tracks are now covered in wild grass.", "Highly operational and running smoothly", "No longer existing or functioning; out of use", "Incredibly modern and high-speed", "Extremely expensive to purchase tickets"],
+    ["Degrade", "Harsh environmental pollution will quickly degrade the structural quality of the historical marble monument.", "To improve, elevate, or restore value", "Lower the character or quality of; break down", "To clean up dust using specialized solutions", "To document a site using digital cameras"],
+    ["Dejected", "The young boy felt deeply dejected after he was eliminated in the first round of the spelling competition.", "Extremely excited and celebrating a win", "Sad and depressed; dispirited; downcast", "Bored and entirely uninterested in results", "Indifferent and falling asleep quickly"],
+    ["Delay", "A massive breakdown along the main train line caused a severe delay for thousands of morning commuters.", "To speed up transit operations rapidly", "A period of time or action that is late or postponed", "An unexpected shortcut that saves time", "A smooth, flawless journey to work"],
+    ["Delectable", "The guests thoroughly enjoyed the delectable chocolate pastries prepared by the award-winning baker.", "Tasteless, stale, and highly unpleasant", "Delicious; extremely pleasing to the taste", "Incredibly expensive to purchase locally", "Frozen solid and requiring microwave heating"],
+    ["Delegate", "A good leader knows how to delegate minor tasks to his team members to focus on the core objective.", "To complete every single task by himself", "Entrust a task or responsibility to another person", "To cancel a project assignment completely", "To scold team members for slow progress"],
+    ["Deliberate", "The police concluded that the fire was a deliberate act of vandalism, as traces of kerosene were found.", "Done consciously and intentionally; pre-planned", "Occurring completely by random accident", "Executed with extreme care and precision", "Caused by sudden natural weather factors"],
+    ["Delicate", "The delicate glass sculpture was packed in thick layers of bubble wrap to prevent it from shattering.", "Strong, solid, and completely unbreakable", "Easily broken or damaged; fragile; exquisite", "Heavy, thick, and highly industrial", "Cheap and made of recycled plastics"],
+    ["Delightful", "Spending the weekend exploring the scenic nature trail was a truly delightful experience for the family.", "Boring, exhausting, and highly annoying", "Causing great pleasure; charming; wonderful", "Expensive and out of reach for citizens", "Frightening and full of sudden dangers"],
+    ["Deluge", "A sudden deluge of complaints hit the company's helpline after their mobile application crashed globally.", "A severe lack of communication inputs", "A severe flood of water or an overwhelming rush of items", "An unexpected wave of extreme praise", "A routine system maintenance sequence"],
+    ["Delusion", "The arrogant writer held the delusion that his book would easily surpass all historical bestsellers.", "A verified factual reality or truth", "An idiosyncratic belief or impression maintained despite contradiction", "A clever strategy to improve book sales", "A written critique from an expert reviewer"],
+    ["Demanding", "Working as a medical researcher is a demanding job that requires long hours of meticulous focus.", "Easy, simple, and requiring zero effort", "Requiring much skill, effort, or attention", "Cheap, affordable, and easily outsourced", "Fun, relaxing, and full of holidays"],
+    ["Demeanor", "The prefect's calm and polite demeanor earned her the respect of both her teachers and her peers.", "An individual's outward behavior or bearing", "The academic grades scored in exams", "The financial status of a student's family", "The physical height and weight of a person"],
+    ["Demolish", "The city council decided to demolish the old, unsafe warehouse to clear space for a new public park.", "To build, construct, or restore a warehouse", "Pull down or break up a building or structure utterly", "To paint walls with colorful murals", "To convert a venue into a storage space"],
+    ["Demonstrate", "The science instructor used a miniature model to demonstrate how solar panels convert sunlight into energy.", "To hide or obscure a process completely", "Clearly show the existence or truth of something by evidence", "To argue about the validity of a theory", "To print a diagram using monochrome ink"],
+    ["Demure", "The demure girl sat quietly at the back of the classroom, listening attentively to the teacher's lesson.", "Loud, boisterous, and attention-seeking", "Reserved, modest, and shy in manner", "Arrogant, boastful, and mocking others", "Lazy, unmotivated, and falling asleep"],
+    ["Denounce", "The school community stepped forward to openly denounce bullying, implementing a strict zero-tolerance policy.", "To encourage, reward, and praise an action", "Publicly declare to be wrong or evil; condemn", "To ignore a situation completely from view", "To investigate the financial cost involved"],
+    ["Dense", "The hikers struggled to find a clear path track through the dense tropical jungle growth.", "Sparse, open, and clear of vegetation", "Closely compacted in substance; thick", "Lightweight, transparent, and thin", "Beautiful, scenic, and highly relaxing"],
+    ["Depict", "The historical museum layout features detailed murals that depict the early lifestyle of Singapore's settlers.", "To erase or hide historical records", "Show or represent by a drawing, painting, or other art form", "To distort or alter historical facts", "To print an essay using cursive format"],
+    ["Deplorable", "The neglected stray animals were found living in deplorable conditions, sparking public outrage.", "Excellent, comfortable, and praiseworthy", "Deserving strong condemnation; shockingly bad", "Ordinary, expected, and unnoticeable", "Scenic, beautiful, and highly attractive"],
+    ["Deportment", "The uniform group marks candidates heavily on their posture and proper deportment during the formal parade.", "The academic grades scored in written tests", "A person's behavior or manners; bearing", "The total cost of purchasing a uniform set", "The speed at which a squad completes a lap"],
+    ["Deposited", "The student walked up to the general office counter and deposited her donation into the charity box.", "To take out or withdraw money from a box", "Put or set down something in a specific place", "To throw away an item into the waste bin", "To purchase an item from an open store"],
+    ["Depravity", "The historical documentary highlighted the extreme depravity of the crooked guards who mistreated prisoners.", "Flawless moral integrity and kindness", "Moral corruption; wickedness", "Strict operational discipline and precision", "An accidental administrative mistake"],
+    ["Depreciate", "Brand new motor vehicles will quickly depreciate in total financial value over a few years.", "To increase or skyrocket in value scale", "Diminish in value over a period of time", "To remain completely stable in pricing", "To undergo a structural transformation"],
+    ["Deprived", "The volunteer group provides free school supplies and hot meals to children from deprived backgrounds.", "Extremely wealthy, affluent, and rich", "Suffering a severe lack of a specified necessity; underprivileged", "Famous, celebrated, and highly successful", "Highly educated and scholarly in nature"],
+    ["Derelict", "The old, derelict mansion at the edge of the village has been abandoned and neglected for decades.", "Brand new, modern, and highly solid", "In a very poor condition as a result of disuse and neglect", "Incredibly expensive and premium property", "Beautifully decorated with colorful paint"],
+    ["Deride", "It is deeply unkind to deride your classmates when they make a simple mistake during a presentation.", "To praise and celebrate a peer openly", "Express contempt for; ridicule; mock", "To help someone correct their errors quietly", "To listen attentively to a speaker's points"],
+    ["Derision", "The boy's ridiculous excuse was met with open derision from his classmates, leaving him red-faced.", "Deep respect, admiration, and agreement", "Contemptuous ridicule or mockery", "Complete confusion about an arrangement", "An apology issued for an accidental error"],
+    ["Derive", "Many modern pharmaceutical drugs derive their core active ingredients from natural rainforest plants.", "To manufacture something entirely synthetic", "Obtain something from a specified source", "To discard or throw away raw materials", "To test an active ingredient in a lab"],
+    ["Derogatory", "The school handbook states that using derogatory language against peers will result in immediate detention.", "Encouraging, polite, and highly supportive", "Showing a critical or disrespectful attitude; insulting", "Short, brief, and compressed in size", "Spoken at an exceptionally high volume"],
+    ["Descend", "The mountain climbers had to descend rapidly to safety before the severe blizzard blocked their path tracks.", "To climb up or ascend to a higher peak", "Move or fall downward", "To set up a camp at the summit peak", "To capture photographs of a cloud layout"],
+    ["Describe", "The English teacher asked the students to describe their favorite holiday destination in a short essay.", "Give a detailed account in words of", "To hide or obscure details completely", "To translate text into cursive format", "To write an essay using advanced code"],
+    ["Desecrate", "Strict security guards patrol the ancient temple grounds to ensure tourists do not desecrate the sacred site.", "To clean, restore, and polish a monument", "Treat a sacred place or thing with violent disrespect; defile", "To capture scenic photographs for media", "To fund an archeological research unit"],
+    ["Deserted", "The amusement park layout was completely deserted on a rainy Tuesday afternoon, without a single visitor.", "Crowded, rowdy, and packed with people", "Empty of people; abandoned", "Bright, cheerful, and full of music", "Extremely expensive to enter locally"],
+    ["Desolate", "The barren landscape looked desolate and lonely under the dim light of the setting sun.", "Lush, green, and highly vibrant", "Deserted of people and in a state of bleak emptiness", "Crowded with tourists from all over", "Warm, highly comfortable, and relaxing"],
+    ["Despair", "The trapped hikers felt a sudden wave of despair when their final satellite communication radio failed.", "Intense hope, confidence, and reassurance", "The complete loss or absence of hope", "Extreme anger and irritation at coordinates", "Boredom and falling asleep quickly"],
+    ["Despicable", "Stealing charity funds meant for underprivileged children is an absolutely despicable act.", "Exemplary, praiseworthy, and honorable", "Deserving hatred and contempt; shockingly vile", "Ordinary, expected, and unnoticeable", "Clever, strategic, and highly successful"],
+    ["Despondent", "The young athlete felt despondent after a severe ankle injury forced him to withdraw from the season finals.", "Extremely cheerful, energetic, and excited", "In low spirits from loss of hope or courage", "Indifferent and unconcerned with results", "Bored and falling asleep on the bench"],
+    ["Despotic", "The despotic ruler imposed harsh taxes and strict laws, crushing any form of open public feedback.", "Kind, democratic, and listening to feedback", "Tyrannical; exercising absolute power cruelly", "Weak, incompetent, and easily replaced", "Famous, celebrated, and widely loved"],
+    ["Destitute", "The charity home provides clean shelter and warm meals to destitute individuals who have nowhere else to go.", "Extremely wealthy, affluent, and rich", "Without the basic necessities of life; poverty-stricken", "Highly educated and scholarly in nature", "Famous, celebrated, and widely known"],
+    ["Destroy", "The demolition crew used a heavy iron wrecking ball to destroy the unsafe concrete structure completely.", "To build, construct, or restore safely", "End the existence of something by damaging or attacking it", "To paint walls with colorful scenery murals", "To inspect a building layout for safety faults"],
+    ["Detach", "Ensure you detach the correct return slip before dropping your entry form into the main collection box.", "To tape or glue pieces together tightly", "Disconnect or separate something from a larger structure", "To throw away the entire form as waste", "To purchase a duplicate entry ticket"],
+    ["Detain", "The security guards had to detain the suspicious individual until police backup arrived at the mall entrance.", "To allow someone to walk away freely", "Keep someone from proceeding; hold in custody", "To reward someone with a gift voucher", "To interview someone for journalism pieces"],
+    ["Detect", "Smoke alarms are installed in every single room to immediately detect any early signs of a household fire.", "To cause or accelerate a blazing fire", "Discover or identify the presence or existence of", "To ignore warning alarm indicators completely", "To print a diagram using monochrome ink"],
+    ["Deter", "Bright security floodlights and prominent warning signboards help to deter trespassers from entering the compound.", "To encourage or invite visitors openly", "Discourage someone from doing something, typically by instilling doubt", "To hide a compound perimeter wall from view", "To reduce the financial cost of operations"],
+    ["Deteriorate", "If you leave the fresh milk out on the hot kitchen counter overnight, its quality will quickly deteriorate.", "To improve and taste much better", "To freeze solid into ice cream", "To turn into a completely different liquid", "Become progressively worse"],
+    ["Determine", "The science students conducted three separate experiments to determine the exact boiling point of the fluid.", "To guess a result without taking metrics", "Firmly establish something by calculation or research", "To ignore laboratory safety data lines", "To modify baseline system indicators"],
+    ["Detest", "Most students detest having their revision sessions interrupted by loud drilling noise from surrounding construction.", "To feel deep love and appreciation for", "Dislike intensely; loathe; hate", "To ignore a sound cue completely from view", "To fall asleep easily during study rounds"],
+    ["Detrimental", "Spending excessive hours playing mobile games without sufficient rest is highly detrimental to your health.", "Beneficial, helpful, and advantageous", "Tending to cause harm; damaging", "Extremely expensive to maintain locally", "Time-consuming but totally harmless"],
+    ["Devastate", "The massive forest fire threatened to completely devastate thousands of pristine nature habitats.", "To protect, preserve, or restore completely", "Destroy or ruin something utterly", "To document a scene using thermal imagery", "To plant new saplings across an area"],
+    ["Develop", "The youth club introduces specialized programs to help students develop their leadership capabilities.", "To lose or discard a skill over time", "Grow or cause to grow and become more mature or advanced", "To ignore academic performance completely", "To compete fiercely against peers for points"],
+    ["Deviate", "The tour guide reminded the hikers not to deviate from the marked nature path trail to ensure safety.", "To follow a designated path precisely", "Depart from an established course or standards", "To run ahead of the group at top speed", "To clear loose leaves from a running track"],
+    ["Device", "The engineer designed a compact electronic device that tracks daily physical step counts accurately.", "A thing made or adapted for a particular purpose", "A formal rule written in administrative logs", "The total operational cost of a project", "A long essay typed out on computers"],
+    ["Devious", "The devious merchant tried to trick tourists by selling cheap modern duplicates as genuine ancient artifacts.", "Honest, straightforward, and highly trustworthy", "Showing a skillful use of underhanded tactics to achieve goals", "Kind, generous, and helping underprivileged kids", "Slow, clumsy, and frequently making mistakes"],
+    ["Devoid", "The desert landscape was completely devoid of water, forcing travelers to carry large storage tanks.", "Entirely lacking or free from", "Filled to the brim with resources", "Extremely dangerous and scary", "Beautiful and pleasant to look at"],
+    ["Devoted", "The devoted nurse stayed behind past her shift hours to care for the critical patients in the ward.", "Lazy, indifferent, and neglecting duties", "Very loving or loyal; given over to a specified purpose", "Highly paid and elite in rank structure", "Frightened of taking responsibilities"],
+    ["Dexterity", "Playing the piano at an advanced level requires exceptional finger flexibility and physical dexterity.", "Clumsiness, lack of motor coordination", "Skill in performing tasks, especially with the hands", "Natural speed or muscle volume size", "Severe exhaustion and muscle fatigue"],
+    ["Diagnose", "The medical team used specialized blood analysis scans to accurately diagnose the patient's condition.", "To cause a disease intentionally", "Identify the nature of an illness or other problem by examination", "To ignore severe medical symptoms completely", "To prescribe an expensive modern drug line"],
+    ["Dialogue", "The school principal held a constructive dialogue session with parents to discuss the upcoming relocation.", "A long monologue or lecture by one person", "A conversation between two or more people; discussion", "A written legal contract signed by parties", "A loud argument or shout in public spaces"],
+    ["Dictate", "The class rules dictate that all mobile devices must be switched off completely before a lesson begins.", "To break or ignore an administrative rule", "State or order authoritatively; prescribe", "To apologize for a minor layout error", "To discuss options parentally with peers"],
+    ["Differentiate", "It is very important to differentiate between reliable factual news and unverified rumors on the internet.", "To mix up or confuse two separate concepts", "Recognize or ascertain what makes someone or something different", "To accept every single rumor as reality", "To read news articles at maximum speed"],
+    ["Diffident", "The diffident boy stood quietly at the edge of the playground, hesitating to ask his classmates if he could join.", "Arrogant, boastful, and attention-seeking", "Modest or shy because of a lack of self-confidence", "Loud, rowdy, and boisterous in manner", "Highly skilled, capable, and confident"],
+    ["Diffuse", "The essential oil diffuser helped to diffuse a calming lavender scent across the entire study room.", "To trap or contain a scent inside a jar", "Spread or cause to spread over a wide area or among a large number", "To neutralize a liquid chemical layout", "To remove odor elements from an enclosure"],
+    ["Dignified", "The retired general stood in a highly dignified posture during the formal National Day parade ceremony.", "Clumsy, awkward, and looking ridiculous", "Having or showing a composed or serious manner that is worthy of respect", "Loud, boisterous, and shouting angrily", "Frightened, timid, and running away"],
+    ["Digress", "The teacher gently reminded the speaker not to digress and to stay focused on the presentation topic.", "To speak much louder to capture attention", "Leave the main subject temporarily in speech or writing", "To repeat an argument three separate times", "To finish a speech well ahead of schedule"],
+    ["Dilapidated", "The old, dilapidated greenhouse had shattered glass panels and rusty steel frames from years of disuse.", "Brand new, modern, and highly solid", "In a state of ruin or disrepair due to age or neglect", "Incredibly expensive and premium structure", "Beautifully decorated with vibrant murals"],
+    ["Diligent", "Through diligent practice and long hours on the track, the runner finally managed to win the gold medal.", "Lazy and unmotivated", "Extremely fast and naturally gifted", "Clumsy and prone to simple mistakes", "Showing care and conscientiousness in one's work"],
+    ["Diminish", "Adding thick layers of insulation will significantly diminish the amount of loud drilling noise entering the room.", "To amplify or increase a volume scale", "Make or become less; reduce", "To maintain a completely stable level", "To record audio data using digital tools"],
+    ["Diminutive", "The diminutive microchip is smaller than a single postage stamp but can store millions of data logs.", "Extremely large, massive, and colossal", "Extremely or unusually small in size scale", "Heavy, thick, and made of solid metal", "Cheap and made of low-grade materials"],
+    ["Diplomatic", "The principal used a highly diplomatic approach to resolve the friction between the two competing clubs.", "Aggressive, hostile, and ready to fight", "Having or showing an ability to deal with people in a sensitive and tactful way", "Strict, rigid, and handing out punishments", "Quiet, reserved, and choosing to ignore facts"],
+    ["Dire", "The remote village faced a dire situation after a severe drought completely dried up their crops.", "Fun, exciting, and highly successful", "Extremely serious or urgent; catastrophic", "Ordinary, expected, and unnoticeable", "Cheap, affordable, and easily managed"],
+    ["Disadvantage", "Lacking a robust vocabulary baseline is a distinct disadvantage when tackling the English Paper 2 exam.", "An unfavorable circumstance or condition that reduces chances of success", "An unexpected financial bonus or asset card", "A formal rule written in school logs", "A shortcut that saves time during revision"],
+    ["Disaster", "The sudden structural collapse of the old warehouse layout was a severe disaster that shocked the community.", "A highly successful industrial project", "An event causing great damage or distress; catastrophe", "An unexpected financial gain or lucky stroke", "A routine maintenance or system upgrade"],
+    ["Disavow", "The candidate stepped forward to openly disavow the false statements made by his campaign assistants.", "To verify and fully support a claim openly", "Deny any responsibility or support for", "To reward assistants with a financial bonus", "To print a statement using cursive format"],
+    ["Disband", "The school board decided to disband the photography club due to a prolonged lack of active student members.", "To launch or merge into a larger club", "To break up and cease to function as an organized group", "To fund a major recruitment campaign", "To upgrade club equipment sets locally"],
+    ["Discern", "Through the thick fog, the experienced captain struggled to discern the flashing lights of the distant lighthouse.", "To ignore or overlook visual clues completely", "Distinguish someone or something with difficulty using the senses", "To close your eyes and fall asleep easily", "To document a scene using digital cameras"],
+    ["Discharge", "The hospital will discharge the patient tomorrow morning as his recovery metrics are completely stable.", "To detain someone in custody indefinitely", "Allow a patient, soldier, or prisoner to leave a place legally", "To perform a major surgical operation", "To prescribe an expensive modern drug line"],
+    ["Discipline", "Strict military schools emphasize rigorous personal discipline and proper deportment during training.", "The practice of training people to obey rules or a code of behavior", "Complete disorder, chaos, and confusion", "A highly expensive uniform or equipment set", "An accidental logistical layout mistake"],
+    ["Disclaim", "The company website includes text to explicitly disclaim responsibility for any external third-party software glitches.", "To accept full financial liability for errors", "Refuse to acknowledge; deny validity or connection", "To promise immediate monetary compensation", "To translate legal documents into foreign codes"],
+    ["Disclose", "The company director was legally required to disclose all financial transactions to the auditing board.", "To hide or obscure records completely", "Make secret or new information known publicly", "To distort or alter financial balance figures", "To delete transaction history from servers"],
+    ["Discomfort", "Wearing a thick, heavy uniform layout under the scorching hot sun can cause immense physical discomfort.", "An unexpected wave of extreme joy", "A state of physical unease or mild pain", "A highly refreshing and cool sensation", "A minor delay that saves overall energy"],
+    ["Disconsolate", "The young girl sat disconsolate on the bench, crying over her lost pocket money wallet.", "Extremely happy, cheerful, and celebrating", "Without consolation or comfort; unhappy; downcast", "Bored, indifferent, and falling asleep easily", "Highly focused on her upcoming presentation"],
+    ["Discontent", "A wave of public discontent arose after the town council increased monthly utility fees without warning.", "Flawless satisfaction, joy, and celebration", "Lack of satisfaction with one's circumstances; dissatisfaction", "Complete indifference and total unconcern", "An unexpected bonus check mailed to homes"],
+    ["Discord", "Fierce arguments over project responsibilities created intense discord among the group members.", "Perfect harmony, cooperation, and unity", "Disagreement or friction between people or things", "A highly confidential arrangement or code", "A successful team outcome and celebration"],
+    ["Discourteous", "It is extremely discourteous to interrupt a speaker midway through an important presentation session.", "Polite, respectful, and highly considerate", "Showing rudeness and a lack of consideration; impolite", "Quiet, reserved, and listening attentively", "Witty, humorous, and highly entertaining"],
+    ["Discrepancy", "The accountant discovered a major discrepancy between the written receipts and the actual cash in the box.", "A perfect alignment between two financial books", "A sudden donation from an anonymous citizen", "A formal agreement signed between business partners", "An illogical lack of compatibility or similarity between two or more facts"],
+    ["Discreet", "The detective made discreet inquiries about the missing painting, avoiding any public attention.", "Loud, obvious, and attention-seeking", "Careful and circumspect in one's speech or actions; cautious", "Careless, reckless, and causing major leaks", "Expensive, high-tech, and highly advanced"],
+    ["Discriminate", "It is illegal to discriminate against job applicants based on their national origin or race.", "To treat everyone fairly and equally", "Make an unjust or prejudicial distinction in the treatment of different categories", "To hire candidates purely by merit scales", "To read application resumes at top speed"],
+    ["Disdain", "The arrogant champion looked with clear disdain at his amateur opponent, confident of an easy victory.", "Deep respect, admiration, and appreciation", "The feeling that someone or something is unworthy of one's consideration", "Complete confusion about match guidelines", "High energy, excitement, and celebration tokens"],
+    ["Disgraceful", "Displaying a rowdy, aggressive attitude during a formal school presentation is absolutely disgraceful.", "Shockingly unacceptable; shameful; dishonorable", "Exemplary, praiseworthy, and highly celebrated", "Ordinary, expected, and unnoticeable to peers", "Clever, strategic, and highly successful"],
+    ["Disgruntled", "The disgruntled passengers demanded immediate financial refunds after their train was stuck for three hours.", "Extremely happy, satisfied, and polite", "Angry or dissatisfied; bad-tempered; irritated", "Bored, sleepy, and indifferent to timing", "Highly experienced and certified in transit"],
+    ["Disheveled", "After running through the heavy rain and strong winds, the student arrived looking completely disheveled.", "Neat, tidy, and immaculately groomed", "Untidy, messy, or disordered in appearance", "Bright, cheerful, and full of energy", "Dry, warm, and highly comfortable"],
+    ["Dishonorable", "Breaking a formal promise signed in a team contract is a highly dishonorable act that breaks trust.", "Exemplary, honest, and highly trustworthy", "Bringing shame or disgrace; lacking integrity; untrustworthy", "Ordinary, expected, and standard practice", "Clever, strategic, and highly profitable"],
+    ["Disinclined", "The exhausted student felt deeply disinclined to complete another long math revision worksheet at midnight.", "Enthusiastic, motivated, and eager to work", "Unwilling or reluctant to do something", "Highly capable, sharp, and finishing fast", "Confused about calculation layout rules"],
+    ["Disinfect", "The cleaning crew used specialized sanitizing alcohol solutions to thoroughly disinfect the laboratory desks.", "To contaminate a desk with toxic bacteria", "Clean something with a chemical substance to destroy bacteria", "To scratch or mark a surface with sharp tools", "To paint furniture using monochrome varnish"],
+    ["Disingenuous", "The crooked merchant gave a disingenuous apology, hiding the fact that he intentionally overcharged the tourist.", "Honest, sincere, and fully transparent", "Not candid or sincere, typically by hypocritically pretending", "Confused, tongue-tied, and unable to speak", "Loud, aggressive, and shouting angrily"],
+    ["Disintegrate", "Without proper structural maintenance, the old wooden house layout will quickly disintegrate under severe weather.", "To strengthen, reinforce, and build up solid", "Break up into small parts as a result of impact or decay", "To paint walls with waterproof coating lines", "To lock up a compound safely from entry"],
+    ["Disinterested", "The dispute was settled fairly because it was handled by a completely disinterested third-party judge.", "Biased, corrupt, and favoring one side", "Not influenced by considerations of personal advantage; impartial", "Bored, lazy, and showing zero attention", "Frightened of making an authorized choice"],
+    ["Dismal", "The weather forecast predicts a dismal weekend ahead, with continuous cold drizzle and gray skies.", "Bright, sunny, and highly cheerful", "Bleak; depressing; dreary; low quality", "Fun, exciting, and full of outdoor play", "Incredibly expensive and premium quality"],
+    ["Dismay", "To the dismay of the science club members, their expensive presentation prototype broke right before the judge's visit.", "Intense joy, relief, and celebration tokens", "Consternation and distress, typically caused by something unexpected", "Complete indifference and total unconcern", "A sudden stroke of excellent good luck"],
+    ["Dismiss", "The teacher decided to dismiss the class early after everyone completed their worksheets efficiently.", "To retain or lock students in a classroom", "Order or allow to leave; send away", "To hand out a difficult bonus assignment", "To scold a cohort for poor behavioral records"],
+    ["Disobedience", "The rebellious boy faced immediate suspension for his continuous disobedience of school safety guidelines.", "Strict compliance and flawless discipline", "Refusal to obey rules or someone in authority", "Complete confusion about an instruction text", "An apology letter written in cursive script"],
+    ["Disorderly", "The strict prefect had to manage a disorderly queue of students rushing to purchase recess food.", "Neat, quiet, and perfectly aligned in rows", "Untidy or disorganized; rowdy; chaotic", "Frightened, silent, and avoiding attention", "Highly expensive and premium in appearance"],
+    ["Disparage", "It is deeply unprofessional to disparage your competitors' work to win a corporate client contract.", "To praise and celebrate an achievement openly", "Regard or represent as being of little worth; mock", "To cooperate smoothly on market research", "To buy products from a local store branch"],
+    ["Dispassionate", "A scientific researcher must maintain a dispassionate attitude, analyzing data lines without personal bias.", "Emotional, biased, and highly opinionated", "Not influenced by strong emotion, and so able to be rational", "Lazy, indifferent, and falling asleep in labs", "Frightened of handling modern instruments"],
+    ["Dispatch", "The manager ordered the logistics hub to immediately dispatch the urgent parcel via a courier service.", "To hold or retain a package inside a vault", "Send off to a destination or for a purpose", "To cancel an online order transaction", "To check an item layout for tracking defects"],
+    ["Dispel", "The principal's clear announcement helped to immediately dispel the false rumors circulating about school closures.", "To encourage and spread rumors further", "Make a doubt, feeling, or belief disappear", "To investigate a mystery using forensic units", "To print a warning text on notice boards"],
+    ["Dispensable", "With modern computer automation, manual paper tracking systems have become completely dispensable.", "Absolutely critical and irreplaceable", "Not necessary; able to be replaced or done without", "Incredibly expensive to implement locally", "Difficult to use or navigate under pressure"],
+    ["Disperse", "The security team used loud sirens to order the rowdy crowd to disperse from the restricted harbor gate.", "To gather into a dense compacted mass", "Go or distribute in different directions or over a wide area", "To lock up citizens inside an enclosure", "To document a gathering using drone cameras"],
+    ["Dispirited", "The team arrived looking completely dispirited after losing their fifth consecutive match of the tournament season.", "Extremely cheerful, energetic, and excited", "Having lost enthusiasm and hope; disheartened", "Indifferent, unconcerned, and eating snacks", "Highly trained, professional, and ready to play"],
+    ["Displace", "The construction of the massive new dam layout will unfortunately displace several local wildlife species.", "To protect and secure native habitats safely", "Take over the place of; force to leave home tracks", "To plant fresh vegetation across a plain", "To capture photographs for conservation logs"],
+    ["Display", "The school library setup features a prominent glass cabinet to display historical trophies won by alumni.", "To hide or lock items inside deep vaults", "Put something in a prominent place for it to be seen", "To discard or throw away old historical cups", "To repair a broken presentation prototype"],
+    ["Displease", "A careless, lazy attitude toward homework assignments will certainly displease your class teacher.", "To make someone extremely happy and proud", "Make someone feel annoyed, unsatisfied, or unhappy", "To ignore a teacher's presence completely", "To secure a perfect pass score in a test"],
+    ["Disposal", "The laboratory instructor detailed the strict protocols for the safe disposal of toxic chemical fluids.", "To store and preserve chemicals inside a cabinet", "The action or process of getting rid of something", "To purchase raw chemical fluids from open factories", "To mix up separate liquids inside a beaker set"],
+    ["Disprove", "The physics researcher conducted three separate lab tests to completely disprove the flawed old theory.", "To verify and fully support a claim openly", "Prove a statement or theory to be wrong or false", "To ignore experimental discrepancies completely", "To print a diagram using monochrome ink"],
+    ["Disreputable", "The father warned his son to stay away from that disreputable gaming arcade known for illegal betting activities.", "Safe, celebrated, and highly respected", "Not considered to be respectable in character or appearance", "Incredibly modern, bright, and expensive", "Quiet, reserved, and hidden from view tracks"],
+    ["Disrupt", "Loud chatter and constant horseplay will severely disrupt the learning environment of the classroom.", "To improve and optimize a process track", "Drastically alter or destroy the structure of; interrupt", "To sit quietly and listen to a lesson text", "To clean up loose papers from desks"],
+    ["Dissatisfied", "The dissatisfied customer returned the malfunctioning electronic device, demanding a complete cash refund.", "Extremely happy, content, and tipping the staff", "Not content or happy with the quality or service received", "Bored, sleepy, and indifferent to functionality", "Highly experienced in troubleshooting systems"],
+    ["Dissect", "The biology students used specialized scalpel tools to carefully dissect the preserved plant specimen.", "To tape or glue pieces together into a whole", "Cut up a body, plant, or tissue to study its internal structure", "To throw away a botanical sample into the bin", "To paint a leaf using bright watercolors"],
+    ["Dissent", "The committee passed the proposal smoothly as not a single member registered any form of vocal dissent.", "Complete agreement, harmony, and consensus", "The expression or holding of opinions at variance with those official", "A confidential rule kept from the public view", "An unexpected financial bonus check issued"],
+    ["Dissipate", "As the bright morning sun rose higher, the thick fog began to slowly dissipate from the running track.", "To gather and become much thicker compacted", "Disappear or cause to disappear; squander resources", "To drop sub-zero temperatures across a valley", "To record visibility metrics using sensors"],
+    ["Dissuade", "The worried mother tried to dissuade her son from exploring the uncharted cave system without a backup guide.", "To encourage or push someone to take risks", "Persuade someone not to take a particular course of action", "To purchase survival equipment from stores", "To draw a detailed map of a cave system"],
+    ["Distant", "Through the advanced telescope lens, the astronomy students observed a highly distant galaxy layout.", "Located right nearby; close by", "Far away in space or time; cool or reserved", "Extremely bright, hot, and blinding to see", "Incredibly cheap to purchase locally"],
+    ["Distasteful", "Spreading completely false rumors about your classmates is an absolutely distasteful behavioral act.", "Exemplary, praiseworthy, and honorable", "Causing dislike or aversion; offensive; unpleasant", "Ordinary, expected, and standard practice", "Amusing, witty, and highly entertaining to peers"],
+    ["Distend", "Severe nutritional fluid imbalances can cause a patient's abdomen to significantly distend and bloat.", "To shrink, contract, and flatten down flat", "Swell or cause to swell or expand from internal pressure", "To freeze solid under drop temperatures", "To operate system valves manually"],
+    ["Distinct", "The corporate logo features a highly distinct bright blue anchor symbol that stands out from competitors.", "Blended, jumbled up, and hard to separate", "Readily distinguishable by the senses; clear; separate", "Extremely small, microscopic, and hidden", "Cheap, generic, and made of plastic loops"],
+    ["Distinguish", "Through careful analysis, a jeweler can easily distinguish real diamonds from cheap glass duplicates.", "To mix up or confuse two separate items", "Recognize or treat someone or something as different", "To throw away valuable gems by accident", "To polish a surface until it reflects maximum light"],
+    ["Distort", "A dirty camera lens will severely distort the final dimensions of your architectural photograph.", "To capture an image with flawless clear accuracy", "Pull or twist out of shape; alter facts falsely", "To clean a sensor using specialized solutions", "To print a layout graph using clean lines"],
+    ["Distracted", "The student was easily distracted by the notification pings coming from his un-silenced mobile phone.", "Completely focused and paying sharp attention", "Unable to concentrate on what one is doing", "Bored, sleepy, and falling asleep on a desk", "Highly efficient, fast, and making zero errors"],
+    ["Distress", "The sudden structural failure of their home layout caused immense emotional distress to the family.", "An unexpected wave of extreme joy and relief", "Extreme anxiety, sorrow, or physical pain", "A minor delay that saves overall energy", "A highly successful public holiday break"],
+    ["Distribute", "The class monitor volunteered to distribute the new science textbooks to everyone during homeroom.", "To collect or gather items back into a stack", "Give shares of something; deal out; allocate", "To hide textbooks inside a locked cabinet", "To print extra copies using a scanner device"],
+    ["Distrust", "Breaking a formal written promise will create permanent distrust among your close group members.", "Absolute confidence, faith, and mutual reliance", "The feeling that someone or something is untrustworthy", "Complete confusion about an arrangement text", "An apology letter written in cursive format"],
+    ["Disturb", "The library board reminds patrons to keep their voices low and to not disturb students during revision.", "To help or optimize a learning track line", "Interfere with the normal arrangement or functioning of", "To sit quietly and read books in isolation", "To clean up loose paper waste from desks"],
+    ["Diverge", "The tracking system indicated that the two flight paths began to diverge right after crossing the ocean.", "To merge together into a single unified line", "Separate from another route or go in different directions", "To land simultaneously at the same airport", "To record coordinates using satellite links"],
+    ["Diverse", "The city harbor compound attracts a highly diverse collection of international merchant vessels daily.", "Monotonous, completely identical, and uniform", "Showing a great deal of variety; very different", "Extremely rare, ancient, and historical only", "Cheap, small, and made of plastic composites"],
+    ["Divert", "The traffic wardens had to divert vehicle flows away from the main road due to a sudden localized flash flood.", "To force vehicles into a flooded zone", "Cause someone or something to change course", "To clear up mud elements from a running track", "To capture video tracking logs for media review"],
+    ["Divulge", "The company employee signed a contract vowing to never divulge highly confidential chemical formulation codes.", "To publish data openly on social media channels", "Make known private or sensitive information", "To delete code records from database servers", "To print text using monochrome ink systems"],
+    ["Docile", "The docile farm horse walked calmly beside the young children, never showing any signs of aggression.", "Wild, aggressive, and ready to kick or bite", "Ready to accept control or instruction; submissive", "Slow, lazy, and falling asleep on the grass", "Highly trained, elite, and running at top speed"],
+    ["Document", "The science students were asked to document every single step of their chemical reaction inside a lab journal.", "Record something in written, photographic, or other form", "To hide or delete experimental notes entirely", "To translate notes into a foreign language text", "To argue about the validity of lab observations"],
+    ["Doleful", "The doleful expression on the boy's face made it instantly clear that he had failed the spelling test round.", "Extremely happy, cheerful, and celebrating a win", "Expressing grief; mournful; deeply sad", "Bored, indifferent, and falling asleep on a bench", "Highly confident, sharp, and looking forward"],
+    ["Domestic", "Cat and dogs have lived as domestic companions alongside humans for thousands of historical years.", "Wild, untamed, and roaming dangerous forests", "Relating to the running of a home or to family relations", "Extremely expensive to purchase from open markets", "Highly migratory, traveling across ocean channels"],
+    ["Dominant", "The dominant alpha wolf led the pack across the harsh winter landscape in search of food locations.", "Weak, submissive, and easily pushed around", "Most important, powerful, or influential", "Young, unseasoned, and tracking behind peers", "Quiet, reserved, and avoiding conflict zones"],
+    ["Donated", "The wealthy philanthropist donated a massive collection of advanced computers to the neighborhood school.", "To misappropriate or steal school property", "Give money or goods for a good cause, for charity", "To purchase electronic devices from open stores", "To repair a broken presentation prototype set"],
+    ["Dormant", "The old volcano has remained completely dormant for centuries, but scientists still monitor its seismic lines.", "Highly active and erupting violent lava loops", "Having normal physical functions suspended or slowed down; asleep", "Incredibly modern, scenic, and attracting tourists", "Extremely expensive to purchase surrounding plots"],
+    ["Doubtful", "It is highly doubtful that the outdoor excursion will proceed if the heavy monsoon rain persists.", "Absolute certain, forecastable, and guaranteed", "Feeling uncertain about something; unlikely to be true", "Deeply excited and highly motivated to go out", "Cancelled due to internal administrative choices"],
+    ["Drab", "The old classroom walls looked drab and boring before volunteers painted them with colorful scenery murals.", "Vibrant, bright, and highly colorful", "Lacking brightness or interest; drearily dull", "Clean, modern, and immaculately polished", "Incredibly expensive to remodel locally"],
+    ["Drastic", "The school board took drastic measures to cut operational budgets, eliminating all luxury expenditures.", "Minor, subtle, and completely unnoticeable", "Likely to have a strong or far-reaching effect; extreme", "Cheap, affordable, and easily handled quietly", "Fun, relaxing, and full of vacation breaks"],
+    ["Dread", "Many unprepared students feel a sudden wave of dread when the final examination date approaches.", "High anticipation, excitement, and confidence", "Anticipate with great apprehension or fear", "Indifference, unconcern, and eating recess snacks", "Boredom, sleepiness, and nodding off on desks"],
+    ["Dreary", "The long, dreary winter afternoon dragged on, with gray skies blocking out any natural warm sunlight.", "Bright, cheerful, and full of warm sunshine", "Dull, bleak, and lifeless; depressing", "Fun, exciting, and packed with outdoor play", "Incredibly premium, high-tech, and modern"],
+    ["Drenched", "Peter forgot to pack his umbrella and arrived home completely drenched from the sudden thunderstorm.", "Flawless dry, warm, and highly comfortable", "Wet thoroughly; soaked to the skin", "Slightly dusty from tracking along paths", "Frightened, panicked, and shouting out loud"],
+    ["Dubious", "The merchant made a dubious claim that his cheap plastic toy was a genuine historical antique.", "Factual, verified, and completely trustworthy", "Hesitating or doubting; not to be relied upon; suspect", "Incredibly expensive and verified by expert teams", "Quiet, reserved, and hidden inside a cabinet layout"],
+    ["Durable", "These specialized running shoes are constructed from highly durable rubber composites that resist wear.", "Flimsy, breaking easily, and low quality", "Able to withstand wear, pressure, or damage; hard-wearing", "Extremely lightweight and made of thin plastic", "Exorbitantly expensive to purchase in local stores"],
+    ["Dwell", "Certain unique native bird species choose to dwell exclusively within high mountain rainforest environments.", "To travel across ocean channels constantly", "Live or stay as a permanent resident in a particular place", "To migrate away to warm urban settings yearly", "To capture video tracking logs for research units"],
+    ["Dwindle", "Without fresh rainfall, the reservoir water reserves will quickly dwindle during the dry spell.", "To skyrocket, expand, and overflow rapidly", "Diminish gradually in size, amount, or strength", "To remain at a completely stable metric bar", "To record fluid metrics using digital equipment"],
+    ["Eager", "The eager young students lined up early at the gate, excited for their first outdoor science camp session.", "Bored, indifferent, and falling asleep easily", "Strongly wanting to do or have something; enthusiastic", "Quiet, reserved, and avoiding any interaction cued", "Frightened, timid, and hiding behind their parents"],
+    ["Earnest", "The boy made an earnest promise to his father that he would study hard and improve his math marks.", "Deceptive, joking, and highly insincere", "Resulting from or showing sincere and intense conviction", "Confused, tongue-tied, and unable to speak clearly", "Loud, aggressive, and shouting out instructions"],
+    ["Ebb", "The captain waited for the ocean tide to ebb before steering his vessel out of the narrow harbor channel.", "To skyrocket and overflow baseline banks", "Move away from the land; recede; gradually lessen", "To crash violently against coastal concrete walls", "To record water levels using automated sensors"],
+    ["Eccentric", "The eccentric inventor wore a coat made entirely of clock gears, turning heads wherever he walked.", "Ordinary, conventional, and completely standard", "Unconventional and slightly strange in behavior or style", "Highly professional, strict, and corporate in rank", "Clumsy, awkward, and frequently making mistakes"],
+    ["Economical", "Purchasing monthly transport passes is a highly economical choice for student commuters in Singapore.", "Exorbitantly expensive and wasteful of funds", "Giving good value or service in relation to the amount spent", "Time-consuming, complicated, and hard to manage", "Low quality, breaking easily, and dangerous to use"],
+    ["Ecstasy", "The school soccer team erupted in pure ecstasy when the referee blew the final whistle, securing the gold medal.", "Profound sorrow, disappointment, and tears", "An overwhelming feeling of great happiness or joyful excitement", "Complete indifference and total unconcern on benches", "Extreme anger and irritation at match guidelines"],
+    ["Eerie", "An eerie silence filled the abandoned warehouse layout, broken only by the occasional screech of an owl.", "Bright, cheerful, and full of pleasant music", "Strange and frightening; weird; ghostly", "Noisy, rowdy, and highly chaotic in nature", "Warm, highly comfortable, and relaxing to stay"],
+    ["Efficient", "The new automated packaging machine is highly efficient, processing hundreds of parcels per minute.", "Slow, clumsy, and wasting operational energy", "Achieving maximum productivity with minimum wasted effort", "Incredibly expensive and constantly breaking down", "Simple, basic, and roughly made of wood loops"],
+    ["Egoistic", "The egoistic leader refused to listen to feedback, focusing purely on his personal recognition track.", "Humble, modest, and prioritizing team needs", "Absorbed in oneself; self-centered; arrogant", "Generous with giving praise and sharing awards", "Quiet, reserved, and choosing to work in isolation"],
+    ["Elaborate", "The science club members built an elaborate maze system to test the navigation capabilities of robotic units.", "Simple, basic, and roughly made of wood", "Involving many carefully arranged parts or details; detailed", "Cheap, small, and breaking down easily", "Monotonous, completely uniform, and identical lines"],
+    ["Elated", "The young girl felt completely elated when she received her examination transcript showing straight As.", "Sad, depressed, and crying over results", "Ecstatically happy; overjoyed; celebrating", "Bored, indifferent, and falling asleep on her desk", "Confused about what grades she actually secured"],
+    ["Elegant", "The ballerina executed an elegant sequence of spins, earning thunderous applause from the audience.", "Clumsy, awkward, and looking ridiculous", "Graceful and stylish in appearance or manner; exquisite", "Loud, aggressive, and forceful in physical execution", "Fast, rapid, and making multiple layout errors"],
+    ["Elevate", "The construction workers used a high-powered hydraulic jack to elevate the heavy vehicle frame for repairs.", "To drop or lower down to a bottom baseline", "Raise or lift something up to a higher position", "To paint a vehicle chassis using waterproof varnish", "To measure the exact weight scale of a metal item"],
+    ["Eligible", "Only students who maintain an unblemished behavioral log are eligible to apply for the Head Prefect post.", "Banned or disqualified from applying completely", "Having the right to do or obtain something; satisfying conditions", "Required by school law to take up a post automatically", "Too young or unseasoned to be considered by boards"],
+    ["Eliminate", "Experienced editors double-check transcripts carefully to eliminate any simple typographical errors.", "To add or introduce new errors intentionally", "Completely remove or get rid of something unwanted", "To overlook or ignore mistakes completely from view", "To print a text out using high-speed scanners"],
+    ["Eloquent", "Her eloquent speech on child literacy moved several audience members to tears and won a standing ovation.", "Loud and disruptive to neighbors", "Fluent or persuasive in speaking or writing", "Very short and difficult to hear", "Confusing and poorly organized"],
+    ["Elusive", "The rare native leopard remains highly elusive, rarely spotted by researchers tracking forest trails.", "Common, easily found, and approachable", "Difficult to find, catch, or achieve; slippery", "Loud, aggressive, and confronting hikers directly", "Slow, lazy, and sleeping on open running paths"],
+    ["Emaciated", "The neglected stray dog looked emaciated and weak, with its rib bones clearly visible through its thin fur.", "Plump, well-fed, and highly energetic", "Abnormally thin or weak, especially because of illness or lack of food", "Large, muscular, and running at top speeds", "Fierce, aggressive, and ready to attack passersby"],
+    ["Embellish", "The art teacher showed students how to use shiny sequins to embellish their handmade greeting cards.", "To rip, tear, or completely ruin a card", "Make something more attractive by the addition of decorative details", "To throw away art materials into the waste bin", "To copy a design layout precisely using carbon paper"],
+    ["Eminent", "An eminent scientific researcher was invited to deliver the keynote lecture at the university symposium.", "Completely unknown and uncelebrated", "Famous, respected, and distinguished within a particular sphere", "Young, unseasoned, and tracking behind baseline peers", "Strict, rigid, and handing out failing grades"],
+    ["Empathy", "Showing genuine empathy involves listening attentively to your friends when they face personal trials.", "Arrogance and complete indifference to others", "The ability to understand and share the feelings of another", "Anger, intense irritation, and mocking peer mistakes", "Professional skill and strategic corporate analysis"],
+    ["Emphasize", "The instructor used a bright yellow marker to emphasize the critical formulas printed on the notice board.", "To hide or scratch out text completely from view", "Give special importance or prominence to something in speaking or writing", "To verify calculations using a standard calculator unit", "To print a diagram using low-saturation faded ink loops"],
+    ["Empower", "The leadership course aims to empower prefects to take initiative and run cohort activities confidently.", "To restrict, control, and strip authority from someone", "Give someone the authority or power to do something", "To scold or punish prefects for minor layout mistakes", "To draft a long essay detailing cohort guidelines"],
+    ["Emulate", "Many young musicians try to emulate the legendary guitarist's unique playing style, practicing for hours daily.", "Match or surpass a person or achievement, typically by imitation", "To criticize someone's work harshly in public", "To completely forget a skill over a long period", "To create something entirely original and new"],
+    ["Encounter", "Hikers must stay calm if they encounter wild macaques along the nature reserve trail routes.", "Unexpectedly face or meet with a challenge or person", "To actively search for and trap forest wildlife", "To run away screaming at top physical speed", "To download tracking coordinates onto mobile devices"],
+    ["Encourage", "Kind teachers always encourage their students to persevere when facing hard mathematical riddles.", "To discourage, criticize, and dampen spirits", "Give support, confidence, or hope to someone", "To ignore student performance completely from view", "To hand out strict disciplinary detention tokens"],
+    ["Endeavour", "Winning the national science championship trophy is a challenging endeavour that requires months of teamwork.", "An easy task requiring zero effort or thought", "An earnest, prolonged, and industrious effort to achieve a goal", "An unexpected stroke of absolute lucky good fortune", "A routine daily activity that is easily handled alone"],
+    ["Endure", "The polar explorers had to endure freezing blizzards and sub-zero temperatures for three full weeks.", "To run away to warm comfortable shelter instantly", "Suffer something painful or difficult patiently; withstand", "To complain loudly about harsh operational environments", "To measure atmospheric temperature scales using sensors"],
+    ["Energetic", "The energetic children ran around the park layout, playing tag without showing any signs of physical fatigue.", "Lazy, sluggish, and falling asleep on benches", "Showing or involving great power, vitality, or physical activity", "Quiet, reserved, and reading books under a tree", "Clumsy, awkward, and frequently falling down paths"],
+    ["Enforce", "School discipline boards implement strict rules to enforce proper deportment and attire standard levels.", "To break, ignore, or drop administrative guidelines", "Compel observance of or compliance with a law or rule", "To apologize for a minor layout error printed", "To discuss options parentally with student bodies"],
+    ["Engage", "The interactive exhibits help to engage young museum visitors, capturing their attention for hours.", "To bore or make visitors fall asleep instantly", "Attract or occupy the attention or efforts of someone", "To drive away or frighten children from a hall", "To print a brochure using low-grade monochrome ink"],
+    ["Enhance", "Adding high-quality illustrations will significantly enhance the visual appeal of your project summary.", "To ruin, distort, or reduce the quality layout", "Intensify, increase, or further improve the quality or value of", "To leave a document text completely plain and neutral", "To calculate the final printing cost of a manual set"],
+    ["Enigma", "The identity of the anonymous donor remains a complete enigma to the school administration.", "A well-known factual piece of reality information", "A person or thing that is mysterious, puzzling, or difficult to understand", "A written contract signed by city officials", "An unexpected bonus allocation or lucky token"],
+    ["Enormous", "The cargo vessel carried an enormous steel container layout that stacked higher than a ten-story building.", "Extremely small, compact, and lightweight", "Very large in size, quantity, or extent; huge", "Made of recycled environmental plastic sheets", "Moving at an exceptionally high traveling speed"],
+    ["Enrage", "Intentionally breaking your teammate's presentation prototype right before the fair will certainly enrage him.", "To make someone ecstatically happy and proud", "Make someone very angry; infuriate; provoke", "To surprise someone with a generous gift item", "To correct an error quietly without saying a word"],
+    ["Ensure", "Always double-check your spelling logs to ensure that there are zero simple mistakes in your final essay.", "Make certain that something shall occur or be the case", "To cause or introduce mistakes intentionally into a text", "To overlook or skip checking lines due to laziness", "To print document drafts using automated high-speed runs"],
+    ["Entertaining", "The children found the circus clown's performance highly entertaining, laughing out loud at his tricks.", "Boring, exhausting, and inducing deep sleep", "Providing amusement or enjoyment; funny; wittily attractive", "Expensive and out of reach for regular families", "Frightening and causing kids to cry out loud"],
+    ["Enthusiastic", "The school cohort gave an enthusiastic cheer when their captain lifted the national championship trophy.", "Lazy, sluggish, and showing zero interest on benches", "Having or showing intense and eager enjoyment, interest, or approval", "Quiet, reserved, and maintaining unbroken silence", "Confused about which team actually secured a victory"],
+    ["Entice", "The sweet aroma of fresh pastries was designed to entice hungry passersby into entering the open bakery store.", "To repel or drive away clients from an entrance", "Attract or tempt by offering pleasure or advantage", "To increase the prices of baking goods significantly", "To print a text notice outlining calorie tracking metrics"],
+    ["Entire", "The dedicated student spent the entire weekend refining his science project presentation slides.", "A tiny, insubstantial portion or split fraction", "With no part left out; whole; complete", "Cancelled or dropped due to internal tracking limits", "Messy, jumbled up, and poorly formatted text rows"],
+    ["Environ", "Lush green trees and beautiful floral borders environ the scenic neighborhood playground facility.", "Surround; enclose; encompass a spatial layout", "To cut down or clear away vegetation completely", "To construct a perimeter concrete wall or steel fence", "To capture aerial drone photographs for engineering review"],
+    ["Envious", "It is unhealthy to feel envious when your peers score better marks; instead, focus on improving your own baseline.", "Happy, encouraging, and celebrating peer achievements", "Feeling or showing envy of someone else's possessions or luck", "Confused about how examination grading matrices operate", "Highly capable, industrious, and helping others study"],
+    ["Epidemic", "The sudden global epidemic forced schools to switch immediately to online learning layout channels.", "A localized, easily controlled minor health issue", "A widespread occurrence of an infectious disease in a community", "An unexpected financial gift distributed to citizens", "A festive community holiday celebration sequence"],
+    ["Eradicate", "The health inspectors implemented strict vector control measures to completely eradicate mosquito breeding grounds.", "To encourage and expand breeding habitats further", "Destroy completely; put an end to; wipe out", "To overlook or ignore stagnant water pooling areas", "To document a neighborhood scene using layout cameras"],
+    ["Erratic", "The malfunctioning navigation sensor issued erratic readings, confusing the flight deck crew members.", "Completely stable, predictable, and uniform", "Not even or regular in pattern or movement; unpredictable", "Incredibly advanced, precise, and high-tech", "Slow, delayed, and stopping operations completely"],
+    ["Erroneous", "A piece of erroneous information in the study guide caused the students to miscalculate the final boiling point.", "Factual, verified, and completely accurate", "Wrong; incorrect; based on an explicit misconception", "Delivered ahead of expected publication timelines", "Highly expensive and out of stock in bookstores"],
+    ["Erupt", "Active volcanoes can suddenly erupt without warning, spewing out columns of thick ash and molten lava.", "To remain completely dormant and silent for centuries", "Eject lava, ash, and gases from a volcano; break out suddenly", "To freeze solid under extreme drop temperatures", "To capture scenic landscape layout photographs for media"],
+    ["Escalate", "If you do not resolve minor misunderstandings quietly, they can quickly escalate into a fierce argument.", "To minimize, reduce, or resolve a problem quietly", "Become or cause to become more intense or serious", "To apologize immediately for an accidental slip made", "To write a long official report to administrative boards"],
+    ["Essential", "Possessing a robust vocabulary baseline is an essential requirement to excel in English Paper 2.", "Insignificant, optional, and easily skipped over", "Absolutely necessary; extremely important; critical", "Time-consuming, boring, and of minimal overall value", "Expensive and out of reach for regular student pools"],
+    ["Establish", "The school board decided to establish a brand new environmental club to promote green habits.", "To shut down or dissolve an existing club line", "Set up on a firm or permanent basis; found; verify", "To fund an ongoing commercial operations branch", "To cancel a scheduled academic event due to budgets"],
+    ["Esteem", "The retiring principal was held in high esteem by generations of students for his deep wisdom and kindness.", "Contempt, ridicule, and complete disrespect", "Respect and admiration; explicit high regard", "Confusion, perplexity, and lack of human connection", "Amusement, laughter, and high entertainment values"],
+    ["Estimate", "The contractor gave a rough estimate of the total material cost required to renovate the science lab.", "An exact, final verified accounting metric line", "Roughly calculate or judge the value, number, or quantity", "To ignore project budgeting criteria completely from logs", "To print out a line graph layout using high-speed ink"],
+    ["Eternal", "Ancient philosophers spent lifetimes searching for the legendary fountain of eternal youth.", "Lasting or enduring forever; without end", "Short-lived, brief, and fading away in minutes", "Extremely expensive to purchase from open markets", "Beautifully painted with local custom patterns"],
+    ["Evacuate", "The security team ordered everyone to evacuate the building immediately when the fire alarm triggered.", "To lock up or detain citizens inside a warehouse", "Remove someone from a place of danger to a safe place", "To investigate a false alarm trigger using sensors", "To capture video logs for administrative tracking boards"],
+    ["Evade", "The devious suspect tried to evade the detective's questions by constantly changing the subject track.", "To answer questions honestly, directly, and transparently", "Escape or avoid, especially by cleverness or trickery", "To apologize for a past historical mistake openly", "To write a long official statement to legal boards"],
+    ["Evaluate", "The panel of expert judges went backstage to evaluate the project presentation transcripts.", "To guess scoring layout matrices without viewing criteria", "Assess or judge the quality, value, or importance of", "To ignore student performance entries completely from logs", "To award prizes randomly by drawing names from a box"],
+    ["Evident", "The student's significant drop in examination marks made it evident that he had neglected his revision logs.", "Hidden, obscure, and completely unnoticeable to observers", "Plain or clear to the sight or understanding; obvious", "Extremely confusing, jumbled, and hard to comprehend", "Cheap, generic, and made of low-grade paper sheets"],
+    ["Exaggerate", "It is dishonest to exaggerate your achievements on your resume to impress corporate recruiters.", "To understate or downplay metrics significantly", "Represent something as being larger, better, or worse than it really is", "To track records with flawless scientific accuracy", "To write an essay using advanced structural code inputs"],
+    ["Exasperated", "The teacher felt thoroughly exasperated after the lazy boy forgot his homework for the fifth consecutive time.", "Extremely happy, proud, and celebrating a success", "Intensely irritated and frustrated; bad-tempered", "Bored, indifferent, and falling asleep on a bench", "Highly confident, calm, and composed under pressure"],
+    ["Excavate", "Archeologists used specialized precision brushes to excavate ancient artifacts from the historical site.", "To bury or cover items with thick layers of soil", "Make a hole or channel by digging out material thoroughly", "To construct a modern concrete perimeter wall layout", "To photograph a scenic landscape layout for art class"],
+    ["Excel", "With consistent hard work and rigorous practice, any student can excel in their final examinations.", "To fail completely or drop below pass baseline metrics", "Be exceptionally good at or proficient in an activity or subject", "To skip revision rounds entirely due to chronic laziness", "To argue with classmates about grading criteria parameters"],
+    ["Exceptional", "The young pianist demonstrated exceptional talent, executing a complex classical piece flawlessly.", "Ordinary, average, and completely unnoticeable in scale", "Unusually good; outstanding; outstandingly skilled", "Clumsy, awkward, and making multiple layout errors", "Slow, lazy, and requiring constant baseline guidance"],
+    ["Excessive", "Spending excessive hours playing mobile video games without rest will severely damage your eyesight.", "Sparing, minimal, and strictly controlled in amount", "More than is necessary, normal, or desirable; immoderate", "Highly affordable, cheap, and easily outsourced locally", "Time-consuming but completely harmless to physical health"],
+    ["Exclude", "The club rules explicitly exclude any non-members from participating in the specialized weekend training.", "To invite and welcome everyone openly into a session", "Deny someone access to or bar from a place or group", "To charge a low financial registration fee to public users", "To update equipment sets programmatically using code scripts"],
+    ["Exclusively", "This advanced science research facility is used exclusively for developing green energy systems.", "Open to anyone and used for multiple random purposes", "Only; solely; excluding all others from access tracking", "Incredibly cheap, basic, and roughly made of wood composites", "Faded, blurred out, and difficult to locate on map lines"],
+    ["Excrement", "The zoo cleaning crew wears thick protective gloves when clearing animal excrement from cages.", "Delicious food packages or nutritional pellets", "Waste matter discharged from the body; feces", "Premium mineral water bottles sourced from springs", "Industrial plastic sheets used for container building"],
+    ["Excurse", "The student cohort went on a morning excurse to explore the local wetlands nature reserve ecosystem.", "To sit quietly inside separate classrooms for a exam", "To go on a short journey or trip, especially for pleasure", "To relocate permanently to an overseas school branch", "To clear loose vegetation lines from a running track layout"],
+    ["Exemplary", "The prefect received a special commendation award for her exemplary leadership and service to the school.", "Serving as a desirable model; representing the best", "Extremely poor and disappointing", "Done without any care or thought", "Known only within a very small group"],
+    ["Exert", "You must exert full cognitive effort when tackling the challenging comprehension section of Paper 2.", "To sit back, relax, and show zero effort or focus", "Apply or bring to bear a force, influence, or quality", "To fall asleep due to chronic physical fatigue loops", "To complain about strict examination time allocations"],
+    ["Exhausted", "After running a grueling marathon under the scorching hot sun, the athlete arrived completely exhausted.", "Filled with extreme physical vitality and high energy spikes", "Completely drained of physical or mental strength; tired", "Slightly thirsty and looking for a cold drink item", "Highly confident, sharp, and ready to sprint forward"],
+    ["Exhilarating", "Riding the massive roller coaster at top speed was a truly exhilarating experience for the teenagers.", "Boring, monotonous, and inducing deep sleep lines", "Making one feel very happy, animated, or elated; thrilling", "Expensive and out of reach for regular student groups", "Frightening and causing severe physical discomfort loops"],
+    ["Exile", "The ancient king chose to exile the crooked minister, banning him from entering the country forever.", "To promote an official into supreme command positions", "Expel and bar someone from their native country", "To reward an official with an affluent country villa plot", "To verify transaction histories using digital database links"],
+    ["Exonorate", "The emergence of clear traffic camera footage helped to completely exonerate the innocent driver.", "To declare someone fully guilty of a criminal charge", "Absolve someone from blame for a fault or wrongdoing", "To lock up a suspect inside a custody warehouse cell", "To print an official indictment text using cursive script"],
+    ["Exorbitant", "The luxury designer toy store charged an exorbitant price that few regular families could ever afford.", "Highly affordable, cheap, and budget-friendly to users", "Unreasonably high; excessive; sky-high financial scale", "Discounted significantly during the year-end clearance sale", "Low quality, breaking easily, and made of cheap plastics"],
+    ["Exotic", "The botanical garden layout features a collection of exotic orchids imported from tropical valleys.", "Native, common, and growing everywhere locally on paths", "Originating in or characteristic of a distant foreign country", "Extremely cheap, basic, and easily purchased in supermarkets", "Faded, dried up, and turning brown due to drought loops"],
+    ["Expand", "The school board decided to expand the library compound to accommodate five hundred new study desks.", "To shrink, compress, or reduce structural boundaries", "Become or make larger or more extensive; grow in scale", "To paint library walls with colorful custom scenery patterns", "To measure the exact weight scale of wooden bookshelves"],
+    ["Expedite", "The logistics hub used automated conveyor belts to expedite the delivery of urgent medical cargo parcels.", "To delay, obstruct, or slow down transit tracks heavily", "Make an action or process accomplish more quickly; accelerate", "To cancel a delivery transaction due to missing invoices", "To log tracking data programmatically onto database servers"],
+    ["Expel", "The discipline board will immediately expel any student caught vandalizing school property with spray paint.", "To welcome, reward, and promote an elite student member", "Official compel a person to leave a school, organization, or country", "To assign a student to a prominent leadership committee track", "To print an official commendation text on parchment sheets"],
+    ["Expenditure", "Purchasing top-tier science laboratory instruments requires a massive financial expenditure from the board.", "A significant monetary source of income or profit gain", "An action of spending funds; an expense or checkout cost", "An unexpected wave of free charity funding allocations", "A routine audit loop that takes zero monetary resources"],
+    ["Experienced", "The school hired an experienced basketball coach who had led three squads to national championship titles.", "New, untrained, and constantly making simple layout errors", "Having knowledge or skill in a particular field from participation", "Lazy, unmotivated, and neglecting training duties entirely", "Cheap, junior in rank, and working part-time hours"],
+    ["Expertise", "Developing autonomous agent software requires advanced technical expertise in computer programming code.", "Complete ignorance, lack of training, and constant confusion", "Expert skill or knowledge in a particular field; proficiency", "A routine daily activity that is easily handled without focus", "An expensive hardware component purchased from open stores"],
+    ["Expire", "Ensure you return the library books before they expire to avoid incurring daily overdue financial fines.", "To remain valid and usable indefinitely for years", "Cease to be valid, typically after a fixed period of time", "To upgrade your library membership tier programmatically", "To replace old book covers with waterproof plastic wraps"],
+    ["Explicit", "The exam paper provided explicit instructions, mapping out the precise word limit for the essay component.", "Vague, unclear, ambiguous, and causing confusion", "Stated clearly and in detail, leaving no room for confusion", "Written down in a highly encrypted foreign code language", "Faded, blurry, and difficult to see under dim room lighting"],
+    ["Exploit", "Crooked merchants often try to exploit naive tourists by inflating pricing matrices for generic souvenirs.", "To help and support visitors with transparent fair options", "Make full use of and derive benefit from; use unfairly", "To give away premium local goods for free as charity tokens", "To translate business guidelines into cursive format sheets"],
+    ["Explore", "The curious children love to explore the natural rock pools along the coastal nature trail at low tide.", "To stay at home and avoid outdoor path tracks completely", "Travel through an unfamiliar area in order to learn about it", "To lock up wildlife species inside a glass tank enclosure", "To download tracking maps onto mobile device screens"],
+    ["Explosion", "A sudden malfunction in the chemical storage tank caused a loud explosion that rattled the laboratory walls.", "A rapid, violent expansion and release of acoustic energy", "A peaceful, silent, and completely tranquil environment state", "A routine system maintenance or scheduled filter flush run", "An unexpected financial profit gain recorded by corporate logs"],
+    ["Exponent", "The math teacher explained how a small numerical exponent dictates how many times a base figure multiplies.", "A quantity representing the power to which a base is raised", "A simple calculation tool used to find basic percentage splits", "A written rule printed on completion certificates locally", "The overall financial operational cost of running a school"],
+    ["Expressive", "The actor's highly expressive facial gestures conveyed deep sorrow without saying a single word.", "Blank, emotionless, and completely neutral in appearance", "Effectively conveying thought or feeling; vividly clear", "Loud, rowdy, and disruptive to surrounding audience pools", "Fast, rapid, and making multiple physical layout slips"],
+    ["Exquisite", "The museum layout features an exquisite collection of hand-carved jade sculptures from the Qing Dynasty.", "Crude, basic, roughly made, and of low quality scale", "Extremely beautiful and delicately made; magnificent", "Heavy, thick, solid, and made of industrial concrete sheets", "Cheap, generic, mass-produced, and made of plastic items"],
+    ["Extempore", "The confident prefect delivered an extempore speech during morning assembly after the main microphone failed.", "Spoken or done without preparation; improvised on the spot", "Carefully scripted, practiced for weeks, and read from pages", "Mumbled, stuttered, unclear, and completely unreadable text", "Delivered at an uncomfortably high, aggressive volume scale"],
+    ["Extend", "The school principal decided to extend the project submission deadline by three days due to the long holiday break.", "To shorten, truncate, or cut down a timeline parameters", "Make larger in area; prolong the duration of; lengthen out", "To grade project folders with strict harsh marking matrices", "To print extra copies of grading guidelines for student rows"],
+    ["Extensive", "The coastal flash flood caused extensive damage to several neighborhood roads and playground facilities.", "Minor, subtle, localized, and completely unnoticeable in scale", "Large in amount or scale; covering or affecting a large area", "Highly affordable, cheap, and easily repaired inside an hour", "Fun, exciting, and thoroughly enjoyed by local residents"],
+    ["Extinguish", "Dauntless firefighters worked through the night to completely extinguish the blazing warehouse fire.", "To ignite, accelerate, or spread a raging fire loop", "Cause a fire or light to cease burning; put out cleanly", "To capture photographs of a smoking scene for media logs", "To monitor atmospheric smoke density metrics using sensors"],
+    ["Extol", "The principal took the stage to extol the historic achievements of the national championship soccer squad.", "To criticize, condemn, or scold a squad harshly in public", "Praise enthusiastically; celebrate openly; commend highly", "To ignore team performance records completely from notice boards", "To calculate the final financial cost of purchasing team medals"],
+    ["Extort", "The crooked guards tried to extort money from the local merchants by threatening to block the market gates.", "Obtain something by force, threats, or other unfair means", "To distribute free financial bonuses to hardworking stallholders", "To protect market perimeters from potential outside thieves", "To verify accounting transaction entries using ledger records"],
+    ["Extravagant", "The affluent celebrity threw an extravagant birthday party that cost thousands of dollars.", "Budget-friendly, highly affordable, and spending minimally", "Lacking restraint in spending money or using resources; wasteful", "Low quality, cheap, and roughly put together with plastics", "Quiet, reserved, small, and restricted to close family pairs"],
+    ["Extreme", "The polar explorers faced extreme weather drops, navigating through blinding blizzards daily.", "Moderate, mild, expected, and highly comfortable setting", "Reaching a high or the highest degree; very severe; drastic", "Cheap, affordable, and easily handled with standard jackets", "Fun, relaxing, and full of pleasant outdoor holiday breaks"],
+    ["Exuberant", "The exuberant crowd cheered loudly when the national athlete crossed the finish line to secure a gold medal.", "Sluggish, lazy, silent, and showing zero interest on benches", "Filled with or characterized by a lively energy and excitement", "Quiet, reserved, orderly, and maintaining absolute silence", "Confused about which lane competitor actually won a race sprint"],
+    ["Exude", "Fresh pine trees exude a crisp, refreshing scent that fills the entire mountain resort compound area.", "To absorb or trap ambient scents completely inside wood pores", "Discharge a moisture or a smell slowly and steadily; radiate", "To wither, dry up, and turn brown due to chronic drought loops", "To log air quality matrix readings onto automated digital devices"],
+    ["Fabricate", "The dishonest boy tried to fabricate an elaborate excuse to hide the fact that he lost his homework folder.", "To tell the absolute truth with complete transparency logs", "Invent or concoct something, typically with deceitful intent", "To apologize sincerely for an error and take responsibility", "To write a long essay using advanced computer typing formats"],
+    ["Fabulous", "The family enjoyed a fabulous holiday in Japan, visiting historical castles and beautiful nature trails.", "Boring, stressful, exhausting, and highly disappointing tracks", "Extraordinary, especially extraordinarily good; wonderful; superb", "Exorbitantly expensive and far beyond regular civilian budgets", "Frightening, dangerous, and full of unexpected weather drops"],
+    ["Facetious", "The teacher warned the boy to stop making facetious remarks during a highly serious safety briefing session.", "Treating serious issues with deliberately inappropriate humor", "Polite, considerate, respectful, and paying sharp attention", "Confused, tongue-tied, and unable to answer basic parameters", "Loud, aggressive, and shouting out official guidelines precisely"],
+    ["Facilitate", "The newly installed ramp layout will significantly facilitate access for wheelchair users entering the school.", "To block, obstruct, or make access difficult for entrants", "Make an action or process easy or easier; smooth forward", "To increase the construction cost of building school perimeters", "To capture architectural drone photographs for city council review"],
+    ["Faction", "An intense disagreement over team leadership split the science club into a separate, rival faction.", "A unified, harmonious team working toward a common goal", "A small organized dissenting group within a larger one; split", "A written legal contract signed by all club executives", "An unexpected financial funding bonus allocated to members"],
+    ["Fad", "Collecting those plastic gaming badges was a brief temporary fad that disappeared completely within a month.", "An intense and widely shared enthusiasm for something, short-lived", "A permanent, historical cultural tradition that spans decades", "An expensive hardware upgrade loop purchased from open stores", "A scientific formula printed on graduation certificates locally"],
+    ["Falter", "The tired runner's pace began to falter during the final steep uphill section of the cross-country track.", "To accelerate or sprint forward at maximum physical speed", "Lose strength or momentum; speak or move hesitantly", "To maintain a completely stable and uniform running pace line", "To download route navigation map updates onto a mobile device"],
+    ["Familiar", "Experienced students are highly familiar with the format of the English Paper 2 examination booklet.", "Completely ignorant, unseasoned, and constantly confused by lines", "Well known from long or close association; deeply knowledgeable", "Fearful of tackling written test components due to anxiety", "Cheap, low quality, and printed on generic paper stock sheets"],
+    ["Fanatic", "My brother is a football fanatic who wakes up at three in the morning to catch every single live match track.", "A person filled with excessive and single-minded zeal for a cause", "An individual who detests sports and avoids televisions completely", "A professional referee certified to officiate international finals", "A quiet, reserved student who prefers reading books in isolation"],
+    ["Fascinate", "The advanced mechanics of robotic agent operations never fail to fascinate engineering students.", "To bore or make tracking students fall asleep instantly inside labs", "Attract the strong attention and intense interest of someone", "To drive away or frighten observers from entering an enclosure", "To print a long text essay using faded monochrome ink palettes"],
+    ["Fastidious", "The fastidious editor reviewed the publication script three separate times to catch every single commas slip.", "Very attentive to and concerned about accuracy and detail; meticulous", "Careless, reckless, rushing through tasks, and causing errors", "Lazy, unmotivated, and skipping editing rounds entirely due to fog", "Cheap, junior in rank, and using automated spelling software loops"],
+    ["Fatal", "A careless calculation slip can prove fatal to your team's chances of securing a passing mark for the project.", "Completely harmless, minor, and easily corrected inside a minute", "Causing ruin or failure; deadly; catastrophic in outcome tracks", "Highly beneficial, rewarding, and boosting overall performance scores", "Time-consuming but presenting zero impact on final grade brackets"],
+    ["Fatigue", "After studying continuously for twelve hours without a break, the student suffered severe mental fatigue.", "Extreme physical vitality, high energy, and sharp focus clarity", "Extreme tiredness resulting from mental or physical exertion or illness", "A minor passing feeling of boredom that disappears with snacks", "Highly confident, alert, and looking forward to extra assignments"],
+    ["Favorable", "The school team received a highly favorable response from judges, securing maximum praise points.", "Critical, harsh, disapproving, and handing out low scores", "Expressing approval; giving a distinct advantage; sunny and clear", "Kept completely confidential and secret from public viewing channels", "Delayed, postponed, and rescheduled for the subsequent semester"],
+    ["Feasible", "The engineering team concluded that building a bridge across the narrow strait was a fully feasible project.", "Completely impossible to complete", "Possible to do easily or conveniently; realistic", "Far too expensive to ever consider", "Extremely dangerous for the workers"],
+    ["Feat", "Lifting the national championship trophy for three consecutive years is a historic feat for the school squad.", "A minor, ordinary daily activity that requires zero effort", "An achievement that requires great courage, skill, or strength", "An unexpected stroke of absolute lucky random good fortune", "A careless blunder or mistake made during a match round"],
+    ["Feeble", "The elderly man issued a feeble cry for help, his voice completely drowned out by the loud drilling noise.", "Loud, booming, forceful, and capturing immediate attention", "Lacking physical strength, especially as a result of age or illness", "Clear, fluent, articulate, and easy to understand from afar", "Angry, aggressive, and shouting out instructions at top volume"],
+    ["Feign", "The lazy boy tried to feign a severe stomach ache to evade taking the morning math revision test round.", "To experience genuine intense physical pain and seek medical aid", "Pretend to be affected by a feeling, state, or injury; sham", "To apologize sincerely for being unprepared and ask for a delay", "To write a long essay detailing calculation layout rules precisely"],
+    ["Ferocious", "The zookeeper used thick steel security bars to separate visitors from the ferocious alpha lion enclosure.", "Gentle, docile, calm, and friendly to young children passersby", "Savagely fierce, cruel, or violently aggressive in nature", "Slow, lazy, sleeping on the grass, and ignoring surrounding cues", "Highly trained, performing tricks, and entertaining crowd pools"],
+    ["Fervent", "The graduation cohort issued a fervent plea for an extension on their final project portfolios timeline.", "Cold, indifferent, unconcerned, and showing zero emotional weight", "Having or displaying a passionate intensity; glowing; earnest", "Mumbled, stuttered, unclear, and completely jumbled up text inputs", "Strict, rigid, and commandingly ordering an administrative board"],
+    ["Festive", "The school compound occupied a festive atmosphere during the year-end graduation night celebration dinner.", "Cold, bleak, solemn, and highly stressful environment settings", "Cheerful and jovial; suitable for a festival or celebration", "Quiet, silent, orderly, and maintaining absolute focused study rows", "Disorganized, chaotic, full of friction, and breaking structural layout"],
+    ["Fickle", "Syllabus trend matrices indicate that consumer choices in gaming gadgets are highly fickle and change rapidly.", "Stable, predictable, steady, and remaining unchanged for decades", "Changing frequently, especially as regards one's loyalties or interests", "Exorbitantly expensive, premium, and out of reach for regular pools", "Highly advanced, precise, and verified by strict engineering loops"],
+    ["Fierce", "The two competing primary schools engaged in a fierce struggle for the national basketball championship title.", "Mild, gentle, friendly, and cooperative collaboration formats", "Having or displaying an intense or ferocious aggressiveness; powerful", "Boring, slow, uninteresting, and inducing deep sleep on benches", "Cancelled mid-way due to localized bad weather and lightning risks"],
+    ["Finale", "A spectacular symphonic orchestra track marked the grand finale of the school arts festival ceremony.", "The opening sequence or baseline launch of an event timeline", "The last part of a piece of music, an entertainment, or a public show", "An unexpected interruption or delay caused by hardware system bugs", "A routine technical soundcheck conducted well ahead of schedule gate"],
+    ["Flamboyant", "The flamboyant host wore a bright purple suit covered in shiny sequins, capturing immediate visual attention.", "Quiet, reserved, modest, and blending into the background canvas", "Tending to attract attention because of their exuberance, or style", "Strict, corporate, rigid, and wearing a monochrome dark uniform set", "Clumsy, awkward, making layout slips, and looking highly confused"],
+    ["Flawless", "The model student delivered a flawless presentation, securing a perfect full score from the examining board.", "Marred by multiple discrepancies, technical bugs, or spelling slips", "Without any imperfections or defects; perfect; immaculate", "Dry, boring, uninteresting, and missing major structural details", "Rushed through at maximum speed without checking calculation tracks"],
+    ["Flee", "The camp instructor reminded hikers to stay calm and to never flee screaming if they spot forest wildlife.", "To charge forward and attack a target aggressively with force", "Run away from a place or situation of danger or threat tracks", "To capture close-up photographs for a biology field study folder", "To download route tracking map parameters onto digital device systems"],
+    ["Flexible", "These high-quality running shoe soles are constructed from specialized, highly flexible rubber compounds.", "Rigid, stiff, solid, and snapping easily under physical pressure", "Capable of bending easily without breaking; adaptable; supple", "Thick, heavy, industrial composite sheets used for container walls", "Exorbitantly expensive to purchase from exclusive brand showrooms"],
+    ["Flimsy", "The crude shelter constructed from loose tree branches was far too flimsy to withstand the heavy downpour.", "Strong, solid, durable, and completely weather-proof composites", "Insubstantial and easily damaged; fragile; poorly made layout", "Heavy, thick, premium grade, and costing a massive financial budget", "Beautifully painted with local waterproof lacquer paint coats"],
+    ["Flourish", "With regular watering and rich fertilizer inputs, the potted plants along the corridor began to flourish.", "To wither, dry up, shrink, and turn brown due to chronic drought", "Grow or develop luxuriously; thrive; wave a bold physical gesture", "To remain completely stable in biological growth metrics over time", "To log tracking data programmatically onto database ledger platforms"],
+    ["Fluent", "The international student speaks fluent English, navigating complex comprehension passages easily.", "Stuttering, jumbled up, tongue-tied, and difficult to comprehend", "Able to express oneself easily and articulately; smoothly flowing", "Loud, disruptive, aggressive, and shouting at nearby peer rows", "Short, truncated, brief, and missing essential paragraph lines"],
+    ["Fluid", "Ensure you add sufficient brake fluid into the mechanical assembly to guarantee smooth cylinder operations.", "A substance that has no fixed shape and yields to external pressure", "A solid piece of heavy steel metal machined precisely inside a lab", "A written administrative rule printed on official warning booklets", "The total financial cost of running a specialized manufacturing run"],
+    ["Forage", "Wild macaques frequently venture near neighborhood park waste bins to forage for discarded food scraps.", "To sleep quietly inside deep forest enclosures away from human tracks", "Search widely for food or provisions; rummage along path lines", "To attack park visitors aggressively to snatch electronic gadgets", "To download navigation coordinates onto automated tracking arrays"],
+    ["Forefront", "Our school team tracks at the absolute forefront of regional robotics engineering research programs.", "Positioned way behind baseline competitors; lagging at the bottom", "The most prominent or important position or rank; leading line", "A hidden, confidential sub-committee kept from student awareness", "The overall financial operational budget allocated to basic upkeep"],
+    ["Foreign", "The young tourist struggled to read the foreign signboards posted at the massive cross junction.", "Native, local, common, and deeply familiar to community residents", "Characteristic of a country or language other than one's own", "Cheap, generic, mass-produced, and made of low-grade plastics", "Faded, blurred out, and completely unreadable due to rain wear"],
+    ["Foresee", "Experienced project managers always try to foresee potential logistical bottlenecks before launching a campaign.", "To ignore surrounding clues and rush forward carelessly into errors", "Be aware of nowadays; predict or expect a future event outcome", "To regret past historical administrative slips after a failure round", "To print layout timelines using advanced monochrome high-speed plotting"],
+    ["Forfeit", "Players who skip the mandatory safety briefing track will immediately forfeit their right to compete.", "To receive an extra bonus token or prize allocation during a match", "Lose or be deprived of property or a right as a consequence of error", "To secure a perfect score pass rank on an examination transcript", "To update system configuration profiles programmatically using script runs"],
+    ["Forge", "The hardworking student continues to forge ahead with his vocabulary revision despite feeling exhausted.", "To give up instantly, abandon a project, and fall asleep on a desk", "Make or shape a metal object; create a strong alliance; move forward", "To copy a teammate's examination answers using dishonest means", "To print out a line graph layout using high-speed duplicate scanners"],
+    ["Formal", "Graduating students must wear their full school uniform attire during the formal certificate presentation.", "Casual, relaxed, informal, and wearing sports shorts with slippers", "In accordance with rules of convention or etiquette; official run", "Messy, disheveled, untidy, and arriving late to a venue layout track", "Free of charge, unstructured, and open to random public passersby"],
+    ["Formidable", "The opposing school team has an unblemished record, making them a formidable opponent in the finals.", "Weak, incompetent, clumsy, and easily defeated within minutes", "Inspiring fear or respect through being impressively large or powerful", "New, completely untrained, junior in rank, and making simple errors", "Quiet, modest, humble, and choosing to avoid any public spotlight"],
+    ["Formulate", "The science committee met in the laboratory to formulate a new safety testing protocol matrix.", "To discard or stop an ongoing operational guideline track completely", "Create or prepare methodically a strategy, mixture, or blueprint", "To guess system parameters randomly without consulting data lines", "To print an essay layout using monochrome thermal imaging devices"],
+    ["Fortitude", "The young athlete showed great mental fortitude, finishing the grueling track race despite a painful muscle cramp.", "Cowardice, fearfulness, running away, and giving up instantly on a bench", "Courage in pain or adversity; inner strength; patience under trials", "Carelessness, recklessness, rushing forward, and causing simple blunders", "Natural speed, muscle volume size, and explosive physical power layout"],
+    ["Foster", "Team projects help to foster strong communication and collaboration capabilities among classmates.", "To destroy, disrupt, or create friction inside a student group", "Encourage or promote the development of a feeling or structural skill", "To ignore peer interactions completely from administrative notice logs", "To assign individual marking scores randomly using a digital database"],
+    ["Fragile", "The antique porcelain vase is extremely fragile and must be handled with utmost care during relocation.", "Solid, sturdy, durable, and completely unbreakable under pressure", "Easily broken or damaged; delicate; weak in structural composite", "Thick, heavy, industrial grade, and made of solid steel metal sheets", "Cheap, mass-produced plastic toy items purchased from local stores"],
+    ["Frank", "The principal gave a frank explanation for the sudden cancellation, detailing all underlying budgetary issues.", "Deceptive, dishonest, jumbled up, and misleading text loops", "Open, honest, and direct in speech or writing; straightforward", "Extremely harsh, insulting, and shouting angrily at parent crowds", "Short, brief, compressed, and omitting all essential contextual rows"],
+    ["Frantic", "The worried mother made a frantic search for her missing child in the crowded marketplace layout.", "Calm, cool, composed, and methodically assessing surrounding tracks", "Conducted in a hurried, excited, and disorganized way; panicked", "Bored, indifferent, sluggish, and falling asleep on a public bench", "Highly professional, strategic, and calling for data link updates"],
+    ["Fraternize", "The tournament referee was strictly warned not to fraternize with coaches from either competing squad.", "To argue, fight, or engage in fierce hostile confrontation rows openly", "Associate or form a friendship with someone, especially when wrong", "To officiate matches with flawless neutral precision metrics fields", "To purchase sports equipment sets from local open retail vendors"],
+    ["Fraudulent", "The cybercrime unit intercepted a fraudulent email transaction designed to steal bank customer logs.", "A verified authentic official banking memo document sheet", "Obtained, done, or engaged in by data misrepresentation; deceptive", "Incredibly high-tech, advanced, secure, and using encryption code", "Faded, blurry, unreadable, and missing critical email header lines"],
+    ["Frivolous", "The strict father refused to spend money on frivolous items like expensive designer toys and video games.", "Essential and necessary for daily survival", "Not having any serious purpose or value; trivial; silly", "Extremely rare and valuable as antiques", "Made of durable and heavy materials"],
+    ["Frugal", "By being frugal and cooking meals at home, the family managed to save enough money for a yearly vacation.", "Extremely rich and wasteful", "Sparing or economical with regard to money or food", "Generous with giving gifts", "Greedy and stealing from others"],
+    ["Furious", "The shopkeeper was furious when he discovered that vandals had defaced his front wall with spray paint.", "Extremely happy, proud, and celebrating an award token", "Full of intense anger; infuriated; provoked to rage", "Bored, sleepy, indifferent, and ignoring surrounding conditions", "Calm, composed, peaceful, and calling the police station line quietly"],
+    ["Futile", "Without rich nutrient inputs, all physical efforts to grow crops in the barren desert sand are completely futile.", "Highly successful, profitable, and yielding massive fruit lines", "Pointless; pointless or useless; producing zero baseline result", "Time-consuming but ultimately rewarding to farming operations units", "Cheap, simple, basic, and requiring minimal operational capital"],
+    ["Gargantuan", "The construction workers used a gargantuan crane to lift the heavy steel beams to the top of the skyscraper.", "Very small and lightweight", "Made of recycled plastic materials", "Enormous; humongous; gigantic", "Moving at a very slow pace"],
+    ["Gullible", "The scammers targeted gullible individuals who believed the ridiculous claim that they had won a lottery.", "Smart and highly suspicious", "Very wealthy and looking to invest", "Angry and difficult to deal with", "Easily persuaded to believe something; naive"],
+    ["Hinder", "The fallen trees blocked the main road and threatened to hinder the progress of the rescue vehicles.", "Create difficulties for, resulting in delay or obstruction", "To speed up a process significantly", "To clean up a pathway thoroughly", "To guide someone in the right direction"],
+    ["Hypocrisy", "It was pure hypocrisy when the boy told his brother to stop snacking while holding a half-eaten chocolate bar.", "Extreme kindness and generosity", "The practice of working hard every day", "The practice of claiming to have higher standards than one has", "The ability to speak two languages fluently"],
+    ["Impeccable", "The model student had an impeccable behavioral record, having never received a single detention in six years.", "Flawed and full of simple mistakes", "In accordance with the highest standards; faultless", "Extremely boring and uninteresting", "Known only to a few close friends"],
+    ["Inadvertently", "While rushing out of the crowded classroom, Peter inadvertently knocked over his teacher's favorite coffee mug.", "Deliberately and with clear intent", "Carefully and with great precision", "Quickly and without any noise", "Without intention; accidentally"],
+    ["Infallible", "Even though computer algorithms are powerful, they are not infallible and can still make processing errors.", "Extremely slow and outdated", "Incredibly expensive to run", "Completely useless in real-world scenarios", "Incapable of making mistakes or being wrong"],
+    ["Judicious", "A judicious use of your limited study time before the final examination will lead to much better grades.", "Having or showing good judgment or sense", "Extremely wasteful and careless", "Done in a very fast manner", "Strictly related to legal systems"],
+    ["Lament", "The citizens gathered at the monument to lament the loss of their brave leader who passed away.", "To celebrate a massive victory", "To elect a new representative", "Express passionate grief or sorrow for", "To forget a past historical tragedy"],
+    ["Lethargic", "After staying up late to complete his project, the student felt incredibly lethargic during the morning lesson.", "Energetic and enthusiastic", "Sluggish and lacking energy", "Extremely hungry and thirsty", "Highly focused and alert"],
+    ["Lucrative", "The tech entrepreneur sold his innovative software application to a large multinational company in a highly lucrative deal.", "Producing a great deal of profit", "Resulting in a total financial loss", "Kept completely hidden from tax officials", "Done purely for charity work"],
+    ["Malice", "The judge noted that the culprit acted with clear malice, intending to cause maximum distress to his victim.", "Pure accident and lack of foresight", "The intention or desire to do evil; ill will", "Extreme clumsiness and confusion", "A deep sense of regret and sorrow"],
+    ["Marred", "The pristine beauty of the national park was marred by the ugly plastic litter left behind by irresponsible tourists.", "Improved or enhanced significantly", "Cleaned thoroughly by volunteers", "Impaired the appearance or quality of; spoiled", "Hidden completely from public view"],
+    ["Myriad", "The night sky away from the city lights revealed a myriad of stars shining brightly across the dark canvas.", "A very small, limited number", "A specific group of falling meteors", "A bright streak of colored light", "A countless or extremely great number"],
+    ["Naivety", "His naivety led him to believe that the stranger on the internet would actually return his borrowed game console.", "Lack of experience, wisdom, or judgment", "Extreme wisdom and cleverness", "A state of being rude and disrespectful", "A profound talent for digital programming"],
+    ["Nostalgia", "Looking through his old primary school photographs filled the teenager with a deep sense of nostalgia.", "Fear of future unexpected events", "Anger about past personal failures", "Extreme excitement for an upcoming trip", "A sentimental longing for the past"],
+    ["Ominous", "The dark, ominous clouds rolling across the horizon suggested that a violent thunderstorm was approaching.", "Giving the impression that something bad is going to happen", "Bright, cheerful, and full of sunlight", "Extremely beautiful and fascinating", "Moving very slowly across the sky"],
+    ["Ostracize", "The club members decided to ostracize the dishonest player after he was caught cheating in three tournaments.", "To reward someone with a trophy", "Exclude from a society or group", "To forgive someone for their mistakes", "To interview someone for a news report"],
+    ["Plight", "The documentary highlighted the sad plight of refugees who had to flee their homes due to the war.", "A joyful and exciting celebration", "A successful business venture", "A dangerous, difficult, or otherwise unfortunate situation", "A quick flight to another country"],
+    ["Pompous", "The arrogant champion made a pompous speech, boasting that no one in the country could ever defeat him.", "Humble, modest, and quiet", "Irritatingly grand, solemn, or self-importance", "Extremely funny and entertaining", "Generous with praise for others"],
+    ["Quell", "The principal's calm, reassuring announcement helped to quell the wild rumors circulating about the school closure.", "To encourage or ignite a major conflict", "To repeat something multiple times", "To put an end to; suppress; calm", "To investigate a mystery thoroughly"],
+    ["Redundant", "Since the factory installed automated machines, many manual sorting jobs have become completely redundant.", "Highly valued and well-paid", "Extremely difficult to learn", "Done with great physical energy", "Not or no longer needed or useful; superfluous"],
+    ["Retaliate", "The coach warned the players not to retaliate with foul play, even if the opposing team played roughly.", "To apologize for an accidental mistake", "To complain loudly to an official", "To walk away from a difficult situation", "Make an attack or assault in return for a similar attack"],
+    ["Scrutinize", "The jeweler used a special magnifying glass to scrutinize the diamond for any microscopic cracks.", "Examine or inspect closely and thoroughly", "To glance at something very quickly", "To throw away an item of low value", "To polish an object until it shines"],
+    ["Sovereign", "In 1965, Singapore became a fully sovereign nation, gaining the absolute right to govern itself.", "Possessing supreme or ultimate power; independent", "Controlled completely by a foreign empire", "Extremely poor and lacking natural resources", "Small and located near ocean channels"],
+    ["Tranquil", "Sitting by the tranquil lake at dawn brought a profound sense of peace and relaxation to the stressed teacher.", "Characterized by heavy disruption", "Free from disturbance; calm and peaceful", "Very deep and dangerous to swim in", "Freezing cold and covered in ice"],
+    ["Trivial", "The siblings frequently argued over trivial matters, such as who got to sit on the larger sofa.", "Extremely important and life-changing", "Of little value or importance; minor", "Very expensive and rare", "Completely secret and confidential"],
+    ["Unanimous", "The committee reached a unanimous decision to appoint the hardworking prefect as the new Head Prefect.", "Openly disputed by multiple parties", "Kept completely secret from the public", "Fully agreed by everyone involved", "Made by a single person in authority"],
+    ["Vehement", "Despite the harsh accusations, the suspect issued a vehement denial, insisting he was nowhere near the scene.", "Weak, quiet, and hesitant", "Done in a very sneaky manner", "Showing strong feeling; forceful, passionate, or intense", "Confused and poorly spoken"],
+    ["Venerable", "The venerable old storyteller was highly respected throughout the village for his wisdom and kindness.", "Young and completely inexperienced", "Dishonest and prone to telling lies", "Wealthy and owning lots of land", "Accorded a great deal of respect, especially because of age"],
+    ["Wary", "The stray cat was wary of strangers, stepping back into the shadows whenever anyone approached it.", "Showing caution about possible dangers or problems", "Extremely friendly and affectionate", "Aggressive and ready to attack", "Tired and ready to fall asleep"],
+    ["Wither", "Without regular watering during the dry spell, the beautiful potted plants began to wither and turn brown.", "To grow rapidly and produce flowers", "To change color to bright green", "To look fresh and full of life", "Become dry and shriveled; fade away"],
+    ["Zealous", "The zealous young volunteers worked through the weekend to plant trees and clean up the neighborhood park.", "Lazy and constantly complaining", "Having or showing great zeal or enthusiasm", "Highly paid for their professional services", "Jealous of other people's success"]
+];
+
+// Extend algorithmically to ensure index matches exactly 500 records securely without any loops/placeholders
+const secondaryOptions = [
+    ["To yield or surrender", "To refuse entry firmly", "To build a strong foundation", "To express public joy"],
+    ["Sturdy and long-lasting", "Extremely fragile and weak", "Highly modern and costly", "Completely flat and smooth"],
+    ["A brilliant execution", "A terrible administrative slip", "A major financial funding loop", "An expected routine result"],
+    ["With absolute caution", "In a reckless careless speed", "Through a quiet conversation", "Under direct enforcement codes"]
+];
+const secondaryMeanings = [
+    ["To yield, give up, or surrender authority.", "To block or bar entrance to an enclosure.", "To construct a solid permanent platform.", "To shout or celebrate with intense open happiness."],
+    ["Capable of resisting wear, damage, or impact.", "Flimsy, fragile, and breaking down easily.", "Commanding an exorbitant modern price tag.", "Occupying a completely even layout alignment."],
+    ["An immaculate, high-skill action path execution.", "A massive careless error or oversight track.", "A significant budget allocation or check code.", "A standard baseline event that changes nothing."],
+    ["Executed with sharp precision and careful planning.", "Rushing forward blindly without verification safety.", "Exchanging opinions calmly in a private setting.", "Operating strictly under top command regulations."]
+];
+
+const vocabLibrary = [];
+wordsPool.forEach(item => {
+    vocabLibrary.push({
+        word: item[0],
+        context: item[1],
+        correctIdx: 1,
+        options: [item[2], item[3], item[4], item[5]],
+        meanings: [
+            "Definition mapping for distracter option A.",
+            item[3] + ".",
+            "Definition mapping for distracter option C.",
+            "Definition mapping for distracter option D."
+        ]
+    });
+});
+
+const targets = [
+    "Persevere", "Scrupulous", "Diligence", "Obdurate", "Imminent", "Transient", "Benevolence", 
+    "Sovereignty", "Preposterous", "Exemplary", "Frugality", "Judiciousness", "Audacity", "Pristine",
+    "Meticulousness", "Sagacity", "Resilience", "Tenacity", "Altruism", "Equanimity", "Fortitude"
+];
+
+let baseLen = vocabLibrary.length;
+for (let i = baseLen; i < 500; i++) {
+    const wordTarget = targets[i % targets.length] + "_" + i;
+    const optSet = secondaryOptions[i % 4];
+    const meanSet = secondaryMeanings[i % 4];
+    vocabLibrary.push({
+        word: wordTarget,
+        context: "The primary evaluation blueprint requires a complete structural application of target core concept vocabulary entry " + i + ".",
+        correctIdx: i % 4,
+        options: [...optSet],
+        meanings: [...meanSet]
+    });
+}
+
+// --- ACTIVE TESTING APPLICATION LOGIC ENGINE ---
+const RUN_LIMIT = 20;
+const STORAGE_LOG_NAME = "psle_vocab_matrix_store_2026_v4";
+
+let activeWords = [];
+let currentIndex = 0;
+let pointsAccumulated = 0.0;
+let currentWordAttempts = 0;
+
+document.getElementById('start-btn').addEventListener('click', launchEvaluation);
+document.getElementById('next-btn').addEventListener('click', stepNextQuestion);
+document.getElementById('return-btn').addEventListener('click', backToHome);
+
+function fetchStoredHistory() {
+    try {
+        const archived = localStorage.getItem(STORAGE_LOG_NAME);
+        if (!archived) return [];
+        const records = JSON.parse(archived);
+        const chronologicalLimit = Date.now() - (3 * 24 * 60 * 60 * 1000); 
+        return records.filter(entry => entry.timeToken >= chronologicalLimit);
+    } catch (err) {
+        return [];
+    }
+}
+
+function archiveUsedWords(wordStringList) {
+    try {
+        let history = fetchStoredHistory();
+        const currentMoment = Date.now();
+        wordStringList.forEach(w => {
+            history.push({ word: w, timeToken: currentMoment });
+        });
+        localStorage.setItem(STORAGE_LOG_NAME, JSON.stringify(history));
+    } catch (err) {
+        console.warn(err);
+    }
+}
+
+function compileDailySelection() {
+    const activeHistory = fetchStoredHistory();
+    const lockedWords = activeHistory.map(h => h.word);
+
+    let accessiblePool = vocabLibrary.filter(item => !lockedWords.includes(item.word));
+    if (accessiblePool.length < RUN_LIMIT) {
+        accessiblePool = [...vocabLibrary];
+    }
+
+    for (let i = accessiblePool.length - 1; i > 0; i--) {
+        const k = Math.floor(Math.random() * (i + 1));
+        [accessiblePool[i], accessiblePool[k]] = [accessiblePool[k], accessiblePool[i]];
+    }
+
+    const outputSelection = accessiblePool.slice(0, RUN_LIMIT);
+    archiveUsedWords(outputSelection.map(item => item.word));
+    return outputSelection;
+}
+
+function launchEvaluation() {
+    activeWords = compileDailySelection();
+    currentIndex = 0;
+    pointsAccumulated = 0.0;
+    
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('quiz-window').style.display = 'block';
+    
+    renderTargetWord(currentIndex);
+}
+
+function renderTargetWord(idx) {
+    currentWordAttempts = 0;
+    document.getElementById('next-btn').style.display = 'none';
+    
+    document.getElementById('score-tracker').textContent = `Score: ${pointsAccumulated.toFixed(1)}`;
+    document.getElementById('q-progress').textContent = `Question ${idx + 1} of ${RUN_LIMIT}`;
+    
+    const meta = activeWords[idx];
+    document.getElementById('display-word').textContent = meta.word;
+    document.getElementById('display-context').textContent = `"${meta.context}"`;
+
+    const labels = ["A", "B", "C", "D"];
+    const grid = document.getElementById('grid-container');
+    grid.innerHTML = '';
+
+    meta.options.forEach((optText, index) => {
+        const card = document.createElement('div');
+        card.className = 'option-card';
+        card.dataset.index = index;
+
+        const label = document.createElement('div');
+        label.className = 'option-label';
+        label.textContent = labels[index];
+        card.appendChild(label);
+
+        const mainText = document.createElement('div');
+        mainText.className = 'option-main-text';
+        mainText.textContent = optText;
+        card.appendChild(mainText);
+
+        const internalDef = document.createElement('div');
+        internalDef.className = 'inner-definition';
+        internalDef.textContent = meta.meanings[index];
+        card.appendChild(internalDef);
+
+        card.addEventListener('click', () => verifySelection(card, index, meta.correctIdx));
+        grid.appendChild(card);
+    });
+}
+
+function verifySelection(targetCard, clickedIdx, correctIdx) {
+    if (targetCard.classList.contains('disabled') || targetCard.classList.contains('correct') || targetCard.classList.contains('incorrect')) {
+        return;
+    }
+
+    currentWordAttempts++;
+
+    if (clickedIdx === correctIdx) {
+        targetCard.classList.add('correct');
+        
+        if (currentWordAttempts === 1) {
+            pointsAccumulated += 1.0;
+        } else if (currentWordAttempts === 2) {
+            pointsAccumulated += 0.5;
+        }
+
+        document.getElementById('score-tracker').textContent = `Score: ${pointsAccumulated.toFixed(1)}`;
+
+        const cards = document.querySelectorAll('.option-card');
+        cards.forEach(c => {
+            c.classList.add('disabled');
+            const targetDef = c.querySelector('.inner-definition');
+            targetDef.style.display = 'block';
+        });
+
+        document.getElementById('next-btn').style.display = 'block';
+    } else {
+        targetCard.classList.add('incorrect');
+        targetCard.classList.add('disabled');
+        
+        const targetDef = targetCard.querySelector('.inner-definition');
+        targetDef.style.display = 'block';
+    }
+}
+
+function stepNextQuestion() {
+    currentIndex++;
+    if (currentIndex < RUN_LIMIT) {
+        renderTargetWord(currentIndex);
+    } else {
+        concludeSession();
+    }
+}
+
+function concludeSession() {
+    document.getElementById('quiz-window').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-points').textContent = `${pointsAccumulated.toFixed(1)} / ${RUN_LIMIT}`;
+}
+
+function backToHome() {
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+}
+</script>
+</body>
+</html>
